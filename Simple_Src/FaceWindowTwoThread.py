@@ -3,6 +3,7 @@ from face_recognition_new import *
 caffe.set_mode_gpu()
 
 
+
 capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
 #capture = cv2.VideoCapture('../Testdata/20170528.avi')
 
@@ -12,13 +13,12 @@ capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
 fourcc = cv2.VideoWriter_fourcc(*"DIVX")#(*"XVID")
 saveVideoPath = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) +'.avi'
 saveVideoPath2 = 'CaptureRecording1.avi'
-out = cv2.VideoWriter(saveVideoPath,fourcc,20,(640,480))#(1920,1080)) # 10 is speed. 640,480
+out = cv2.VideoWriter(saveVideoPath,fourcc,20,(640,480)) # 10 is speed. 640,480
 capture = cv2.VideoCapture(0)
 capture.set(cv2.CAP_PROP_FRAME_WIDTH,640)
 capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
-#capture.set(cv2.CAP_PROP_FRAME_WIDTH,1920)
-#capture.set(cv2.CAP_PROP_FRAME_HEIGHT,1080)
 '''
+
 
 
 
@@ -242,12 +242,12 @@ class MainWindow(QWidget):
 
         self.playtimer = Timer("videoPlay", self.qFace)
         self.facetimer = FaceTimer(self.qFace, "facePlay", self.qList1)
-        self.texttimer = TextTimer(self.qList1, "textPlay")#, self.qFeat, self.qFeat_Img)
+        #self.texttimer = TextTimer(self.qList1, "textPlay")#, self.qFeat, self.qFeat_Img)
         self.databasetimer = DatabaseTimer("databaseUpdate")
 
         self.connect(self.playtimer, SIGNAL("videoPlay"), self.playVideo)
-        self.connect(self.facetimer, SIGNAL("facePlay"), self.playFace)
-        self.connect(self.texttimer, SIGNAL("textPlay"), self.multiFaceNew)
+        self.connect(self.facetimer, SIGNAL("facePlay"), self.multiFaceNew)
+        #self.connect(self.texttimer, SIGNAL("textPlay"), self.multiFaceNew)
         self.connect(self.databasetimer, SIGNAL("databaseUpdate"), self.updateDatabase)
         
 
@@ -299,13 +299,27 @@ class MainWindow(QWidget):
             if i == 4:
                 a[0] = aGet
     def multiFaceNew(self, aGet):
-        begin = time.clock()
-        if aGet[0] != "Stranger":
-            self.checkExist(aGet, self.arr)
-        self.checkDisappear(self.arr)
-        self.showSide(self.arr)
-        end = time.clock()
-        print ("show time is {}".format(end - begin))
+        #begin = time.clock()
+
+
+
+        if aGet[2] == 0:
+            pass
+            #self.checkDisappear(self.arr)
+            #self.showSide(self.arr)
+        else:
+            #self.playFace(aGet[2])
+            if aGet[0] != "Stranger":
+                pass
+                #self.checkExist(aGet, self.arr)
+            #self.checkDisappear(self.arr)
+            #self.showSide(self.arr)
+            pass
+
+
+
+        #end = time.clock()
+        #print ("show time is {}".format(end - begin))
     def testName(self,a):
         for i in range(0,5):
             print a[i][0]
@@ -493,13 +507,13 @@ class MainWindow(QWidget):
         self.playButton.setText(playstr)
         if self.status is 1:
             self.playtimer.start()
-            self.facetimer.start()
-            self.texttimer.start()
+            #self.facetimer.start()
+            #self.texttimer.start()
             #print ("playtimer id = {}, \nfacetimer id = {}, \ntexttimer id = {}".format(self.playtimer.currentThreadId,self.facetimer.currentThreadId,self.texttimer.currentThreadId))
         else:
             self.playtimer.stop()
-            self.facetimer.stop()
-            self.texttimer.stop()
+            #self.facetimer.stop()
+            #self.texttimer.stop()
     def DatabaseUpdataStop(self):
         self.DBstatus, cancelstr = ((1, 'updating, please wait ...'), (0, 'UpdateDB'))[self.DBstatus]
         self.cancelButton.setText(cancelstr)
@@ -539,23 +553,23 @@ class Timer(QThread):
         with QMutexLocker(self.mutex):
             self.stoped = False        
         while True:
-            time.sleep(0.04)
             if self.stoped:
                 return
-
-            #begin = time.clock()
+            begin = time.clock()
             ret, face = capture.read()
-            if ret == True:
-                #out.write(face)
-                face = cv2.flip(face, 1)
-                if not qFace.full():
-                    qFace.put(face)
-                byte_im = convImg(face,1000,700)
-                #out.write(cv2.resize(face,(800,600)))
-                self.emit(SIGNAL(self.signal),byte_im)
+            #out.write(face)
+            face = cv2.flip(face, 1)
+            if not qFace.full():
+                qFace.put(face)
+            else:
+                qqq = qFace.get(True,3)
+                qFace.put(face)
+            byte_im = convImg(face,900,630)
+            self.emit(SIGNAL(self.signal),byte_im)
+            time.sleep(0.04)
                 
-            #end = time.clock()
-            #print("capture time is {}".format(end - begin))
+            end = time.clock()
+            print("capture time is {}".format(end - begin))
     
     def stop(self):
         with QMutexLocker(self.mutex):
@@ -576,9 +590,10 @@ class FaceTimer(QThread):
         with QMutexLocker(self.mutex):
             self.stoped = False
         while True:
-            time.sleep(0.04)
+            #time.sleep(2)
             if self.stoped:
                 return
+            begin = time.clock()
             if not qFace.empty():
                 img = qFace.get(True,3)
                 #print ("type is {}".format(type(img)))
@@ -594,6 +609,8 @@ class FaceTimer(QThread):
                             qList1.put(list1)
 
                     if(len(dets)==0):
+                        print "No face detected"
+                        self.emit(SIGNAL(self.signal), ["Stranger",0,0])
                         continue
                     else:
                         #list1 = [img,gray,dets]
@@ -607,7 +624,14 @@ class FaceTimer(QThread):
                                 y1 = 10
                             #print ("img_shape = {}".format(img.shape))
                             imgFace = img[y1:y2,x1:x2,:]
-                            self.emit(SIGNAL(self.signal), convImg(imgFace,100,100))
+                            minkey, minscore = faceRec(img,gray,d)
+                            #if minkey != "Stranger":
+                            aPost = [minkey,0,convImg(imgFace,100,100)]
+                            self.emit(SIGNAL(self.signal), aPost)
+                            end = time.clock()
+                            print ("Second thread time is {}".format(end - begin))
+                            time.sleep(0.2)
+
                             
     def stop(self):
         with QMutexLocker(self.mutex):
@@ -630,7 +654,7 @@ class TextTimer(QThread):
             self.stoped = False
 
         while True:
-            time.sleep(0.04)
+            time.sleep(0.2)
             if self.stoped:
                 return
             if not qList1.empty():
