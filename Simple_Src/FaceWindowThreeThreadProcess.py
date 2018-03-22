@@ -1,5 +1,5 @@
 #coding=utf-8
-from face_recognition_new import *
+from face_recognition_new_process import *
 caffe.set_mode_gpu()
 
 
@@ -73,7 +73,7 @@ def name2dbface(name):
     return convImg(db_im_face,100,100)
 
 class MainWindow(QWidget):
-    def __init__(self, qFace, qList1, qPost, qCapture):#, playtimerOut, facetimerOut, texttimerOut, databasetimerOut):
+    def __init__(self, qFace, qList1, qPost, qCapture,terminateAll):#, playtimerOut, facetimerOut, texttimerOut, databasetimerOut):
         super(MainWindow, self).__init__()
         self.status = 0
         self.DBstatus = 0
@@ -237,6 +237,7 @@ class MainWindow(QWidget):
         self.qList1 = qList1
         self.qPost = qPost
         self.qCapture = qCapture
+        self.terminateAll = terminateAll
         #self.qFeat = qFeat
         #self.qFeat_Img = qFeat_Img
 
@@ -252,16 +253,19 @@ class MainWindow(QWidget):
         self.connect(self.texttimer, SIGNAL("textPlay"), self.multiFaceNew)
         self.connect(self.databasetimer, SIGNAL("databaseUpdate"), self.updateDatabase)
         
-
-        self.connect(self.exitbtn, SIGNAL("clicked()"), self,SLOT('close()'))
         self.connect(self.playButton, SIGNAL("clicked()"), self.VideoPlayPause)
         self.connect(self.cancelButton, SIGNAL("clicked()"), self.DatabaseUpdataStop)
-        #self.connect(self.exitbtn, SIGNAL("clicked()"), self.exit)
+        #self.connect(self.exitbtn, SIGNAL("clicked()"), self,SLOT('close()'))
+        self.connect(self.exitbtn, SIGNAL("clicked()"), self.exitFun)
         self.setWindowTitle('Face Recognition')
         #self.resize(1170, 800)
         self.resize(1200, 850)
         self.cnt = 0
         self.arr = [["Stranger",0,0],["Stranger",0,0],["Stranger",0,0],["Stranger",0,0],["Stranger",0,0]]
+
+    def exitFun(self):
+        self.close()
+        self.terminateAll.value = not self.terminateAll.value
 
     def showSide(self,a):
         for i in range(0,5):
@@ -541,8 +545,8 @@ class Timer(QThread):
         with QMutexLocker(self.mutex):
             self.stoped = False     
 
-        #capture = cv2.VideoCapture(0)  
-        capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi') 
+        capture = cv2.VideoCapture(0)  
+        #capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi') 
         while True:
             time.sleep(0.04)
             if self.stoped:
@@ -715,6 +719,30 @@ class RecProcess(multiprocessing.Process):
     def run(self):
         caffe.set_mode_gpu()
         caffe.set_device(0)
+
+        global net_ctf,net_downmouth,net_eye,net_le,net_re,net_wholeface,net_mouth
+        net_wholeface = caffe.Net('../Models/face_deploy.prototxt',
+                            '../Models/wholeface_iter_28000.caffemodel',
+                            caffe.TEST)
+        net_ctf = caffe.Net('../Models/face_deploy.prototxt',
+                            '../Models/ctf_iter_28000.caffemodel',
+                            caffe.TEST)
+        net_le = caffe.Net('../Models/face_deploy.prototxt',
+                            '../Models/le_iter_28000.caffemodel',
+                            caffe.TEST)
+        net_re = caffe.Net('../Models/face_deploy.prototxt',
+                            '../Models/re_iter_28000.caffemodel',
+                            caffe.TEST)
+        net_eye = caffe.Net('../Models/face_deploy.prototxt',
+                            '../Models/eye_iter_28000.caffemodel',
+                            caffe.TEST)
+        net_mouth = caffe.Net('../Models/face_deploy.prototxt',
+                            '../Models/mouth_iter_28000.caffemodel',
+                            caffe.TEST)
+        net_downmouth = caffe.Net('../Models/face_deploy.prototxt',
+                            '../Models/downmouth_iter_28000.caffemodel',
+                            caffe.TEST)
+
         while True:
             if not self.qList.empty():
                 img, gray, dets = self.qList.get(True,3)
@@ -732,7 +760,7 @@ class RecProcess(multiprocessing.Process):
                         y1 = 10
                     #print ("img_shape = {}".format(img.shape))
                     imgFace = img[y1:y2,x1:x2,:]
-                    minkey, minscore = faceRec(img,gray,d)
+                    minkey, minscore = faceRec(net_wholeface,net_ctf,net_le,net_re,net_eye,net_mouth,net_downmouth,img,gray,d)
                     #if minkey != "Stranger":
                     aPost = [minkey,0,convImg(imgFace,100,100)]
                     if not self.qPost.full():
@@ -810,25 +838,34 @@ qList1 = multiprocessing.Queue(3)
 qPost = multiprocessing.Queue(5)
 qCapture = multiprocessing.Queue(5)
 
+terminateAll = multiprocessing.Value("i", 0)
+
 class ShowWindow(multiprocessing.Process):
-    def __init__(self,qFace,qList1,qPost,qCapture):
+    def __init__(self,qFace,qList1,qPost,qCapture,terminateAll):
         multiprocessing.Process.__init__(self)
         self.qFace = qFace
         self.qList1 = qList1
         self.qPost = qPost
         self.qCapture = qCapture
+        self.terminateAll = terminateAll
     def run(self):
         app = QApplication(sys.argv)
-        mainwindow = MainWindow(self.qFace, self.qList1,self.qPost,self.qCapture)
+        mainwindow = MainWindow(self.qFace, self.qList1,self.qPost,self.qCapture,self.terminateAll)
         mainwindow.show()
         sys.exit(app.exec_())
 if __name__ == '__main__':
-    showwindow = ShowWindow(qFace,qList1,qPost,qCapture)
+    showwindow = ShowWindow(qFace,qList1,qPost,qCapture,terminateAll)
     recprocess = RecProcess(qList1,qPost)
     #captureprocess = CaptureProcess(qCapture,qFace)
     showwindow.start()
     recprocess.start()
     #captureprocess.start()
+    while True:
+        if terminateAll.value:
+            showwindow.terminate()
+            recprocess.terminate()
+            del showwindow,recprocess
+            break
 
 '''
 
