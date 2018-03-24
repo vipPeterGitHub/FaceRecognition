@@ -45,12 +45,6 @@ def readIDcard():
         createDatabase(id_num,pic_path_new,picklePath)
         end = time.clock()
         print ("Create Database time is {}".format(end - begin))
-        '''
-        begin = time.clock()
-        compareFace(cv2.imread('hou1c.jpg'),picklePath)
-        end = time.clock()
-        print ("compare time is {}".format(end - begin))
-        '''
         os.remove(pic_path_new)
     else:
         id_num = 0
@@ -73,13 +67,19 @@ def name2dbface(name):
     return convImg(db_im_face,100,100)
 
 class MainWindow(QWidget):
-    def __init__(self, qFace, qList1, qPost, qCapture, qSmallFace, terminateAll):#, playtimerOut, facetimerOut, texttimerOut, databasetimerOut):
+    def __init__(self, qFace, qList1, qPost, qCapture, qSmallFace, terminateAll):
         super(MainWindow, self).__init__()
+        self.setWindowTitle('Face Recognition')
+        self.resize(1200, 850)
         self.status = 0
         self.DBstatus = 0
-        self.playButton = QPushButton("Play")
+
+        self.playButton = QPushButton("Pause")
+        self.playButton.setStyleSheet('font-size:20px; border-radius:10px;border:3px groove gray')
         self.cancelButton = QPushButton("UpdateDB")
+        self.cancelButton.setStyleSheet('font-size:20px; border-radius:10px;border:3px groove gray')
         self.exitbtn = QPushButton('Exit')
+        self.exitbtn.setStyleSheet('font-size:20px; border-radius:10px;border:3px groove gray')
         self.exitbtn.setFixedWidth(300)  
         self.exitbtn.setFixedHeight(30)
         self.playButton.setFixedWidth(300)  
@@ -90,16 +90,7 @@ class MainWindow(QWidget):
         self.image = QImage()
         self.imageLabel = QLabel('')
 
-        '''
-        self.textLabel = QLabel("Hello World!")
-        self.textLabel.setFixedWidth(1170)  
-        self.textLabel.setFixedHeight(100)  
-        self.textLabel.setAlignment(Qt.AlignCenter)
-        self.textLabel.setFont(QFont("Roman times",50,QFont.Bold))
-        '''
-
         ######## multi_face_show ############
-
         self.face11 = QLabel('')
         self.face12 = QLabel('')
         self.text1 = QLabel(" ")
@@ -147,20 +138,8 @@ class MainWindow(QWidget):
         self.side.addWidget(self.text4)
         self.side.addLayout(self.f5)
         self.side.addWidget(self.text5)
-        '''
-        self.setDefaultPic(self.face11,100,100)
-        self.setDefaultPic(self.face12,100,100)
-        self.setDefaultPic(self.face21,100,100)
-        self.setDefaultPic(self.face22,100,100)
-        self.setDefaultPic(self.face31,100,100)
-        self.setDefaultPic(self.face32,100,100)
-        self.setDefaultPic(self.face41,100,100)
-        self.setDefaultPic(self.face42,100,100)
-        self.setDefaultPic(self.face51,100,100)
-        self.setDefaultPic(self.face52,100,100)
-        '''
-
         ######## multi_face_show ############
+
 
         ######## bottom images begin ##############
         self.c1 = QLabel('')
@@ -176,7 +155,6 @@ class MainWindow(QWidget):
         self.c11 = QLabel('')
         self.c12 = QLabel('')
 
-
         self.bc = QHBoxLayout() #bottom capture image
         self.bc.addWidget(self.c1)
         self.bc.addWidget(self.c2)
@@ -190,34 +168,16 @@ class MainWindow(QWidget):
         self.bc.addWidget(self.c10)
         self.bc.addWidget(self.c11)
         self.bc.addWidget(self.c12)
-        '''
-        self.setDefaultPic(self.c1) # default 100x100 nopic.jpg
-        self.setDefaultPic(self.c2)
-        self.setDefaultPic(self.c3)
-        self.setDefaultPic(self.c4)
-        self.setDefaultPic(self.c5)
-        self.setDefaultPic(self.c6)
-        self.setDefaultPic(self.c7)
-        self.setDefaultPic(self.c8)
-        self.setDefaultPic(self.c9)
-        self.setDefaultPic(self.c10)
-        self.setDefaultPic(self.c11)
-        self.setDefaultPic(self.c12)
-        '''
-        
+
         self.b_cnt = 1 #bottom image count
         self.faces = []
         ######## bottom images end ##############
-
-
-
 
 
         self.videoImage = QHBoxLayout()
         self.videoImage.addWidget(self.imageLabel)
         self.videoImage.addLayout(self.side)
         
-
         self.buttons = QHBoxLayout()
         #hbox.addStretch(1)
         self.buttons.addWidget(self.playButton)
@@ -231,23 +191,16 @@ class MainWindow(QWidget):
         
         self.setLayout(self.whole)
 
-        #self.setDefaultPic(self.imageLabel,1000,700,'nopic.jpg')
-
         self.qFace = qFace
         self.qList1 = qList1
         self.qPost = qPost
         self.qCapture = qCapture
         self.qSmallFace = qSmallFace
         self.terminateAll = terminateAll
-        #self.qFeat = qFeat
-        #self.qFeat_Img = qFeat_Img
-
-
 
         self.playtimer = Timer("videoPlay", self.qCapture)
-        #self.facetimer = FaceTimer("facePlay", self.qFace, self.qList1)
         self.facetimer = FaceTimer("facePlay", self.qSmallFace)
-        self.texttimer = TextTimer("textPlay", self.qPost)#, self.qFeat, self.qFeat_Img)
+        self.texttimer = TextTimer("textPlay", self.qPost)
         self.databasetimer = DatabaseTimer("databaseUpdate")
 
         self.connect(self.playtimer, SIGNAL("videoPlay"), self.playVideo)
@@ -257,158 +210,19 @@ class MainWindow(QWidget):
         
         self.connect(self.playButton, SIGNAL("clicked()"), self.VideoPlayPause)
         self.connect(self.cancelButton, SIGNAL("clicked()"), self.DatabaseUpdataStop)
-        #self.connect(self.exitbtn, SIGNAL("clicked()"), self,SLOT('close()'))
         self.connect(self.exitbtn, SIGNAL("clicked()"), self.exitFun)
-        self.setWindowTitle('Face Recognition')
-        #self.resize(1170, 800)
-        self.resize(1200, 850)
-        self.cnt = 0
+        #self.connect(self.exitbtn, SIGNAL("clicked()"), self,SLOT('close()'))
+        
         self.arr = [["Stranger",0,0],["Stranger",0,0],["Stranger",0,0],["Stranger",0,0],["Stranger",0,0]]
 
-    def exitFun(self):
-        self.close()
-        self.terminateAll.value = not self.terminateAll.value
+        self.playtimer.start()
+        self.facetimer.start()
+        self.texttimer.start()
 
-    def showSide(self,a):
-        for i in range(0,5):
-            if a[i][0] == "Stranger":
-                self.clearLabel(i+1)
-            else:
-                self.whichToShow(i+1, a[i][2], name2dbface(a[i][0]), a[i][0])
-    def checkDisappear(self,a):
-        for i in range(0,5):
-            if a[i][0] == "Stranger":
-                break
-            else:
-                a[i][1] +=1
-        for i in range(0,5):
-            if a[i][1] == 5:
-                self.shift(i,a)
-                i=i-1
-
-    def shift(self,num,a):
-        if num ==4:
-            a[4][0] = "Stranger"
-            a[4][1] = 0
-        else:
-            for i in range(num,4):
-                a[i] = a[i+1]
-            a[4][0] = "Stranger"
-            a[4][1] = 0
-
-    def checkExist(self,aGet,a):
-        for i in range(0,5):
-            if a[i][0] == "Stranger":
-                a[i] = aGet
-                break
-            if aGet[0] == a[i][0]:
-                a[i] = aGet
-                break
-            if i == 4:
-                a[0] = aGet
-    def multiFaceNew(self, aGet):
-        begin = time.clock()
-        if aGet[0] != "Stranger":
-            self.checkExist(aGet, self.arr)
-        self.checkDisappear(self.arr)
-        self.showSide(self.arr)
-        end = time.clock()
-        print ("show time is {}".format(end - begin))
-    def testName(self,a):
-        for i in range(0,5):
-            print a[i][0]
-            print a[i][1]
-            print " "
-
-    def multiFace(self, im, db, score, name):
-    	#if name != "Stranger": # if stranger, it won't send a signal. See TextTimer
-        s = score+" "+name
-        if name == self.name[0]:
-            self.whichToShow(1, im, db, s)
-        elif name == self.name[1]:
-            self.whichToShow(2, im, db, s)
-        elif name == self.name[2]:
-            self.whichToShow(3, im, db, s)
-        elif name == self.name[3]:
-            self.whichToShow(4, im, db, s)
-        elif name == self.name[4]:
-            self.whichToShow(5, im, db, s)
-        else:
-            if self.cnt == 0:
-            	self.showResult(self.face11, self.face12, self.text1, im, db, s)
-            	self.name[0] = name
-            	self.cnt += 1
-            elif self.cnt == 1:
-            	self.showResult(self.face21, self.face22, self.text2, im, db, s)
-            	self.name[1] = name
-            	self.cnt += 1
-            elif self.cnt == 2:
-            	self.showResult(self.face31, self.face32, self.text3, im, db, s)
-            	self.name[2] = name
-            	self.cnt += 1
-            elif self.cnt == 3:
-            	self.showResult(self.face41, self.face42, self.text4, im, db, s)
-            	self.name[3] = name
-            	self.cnt += 1
-            elif self.cnt == 4:
-                self.showResult(self.face51, self.face52, self.text5, im, db, s)
-                self.name[4] = name
-                self.cnt = 0
-    def showResult(self, imLabel1, imLabel2, tLabel, im, db, name):
-        self.image.loadFromData(QByteArray(im))
-        imLabel1.setPixmap(QPixmap.fromImage(self.image))
-        self.image.loadFromData(QByteArray(db))
-        imLabel2.setPixmap(QPixmap.fromImage(self.image))
-        tLabel.setText(name)
-    def whichToShow(self,num, im, db, name):
-        if num == 1:
-            self.showResult(self.face11, self.face12, self.text1, im, db, name)
-        elif num ==2:
-            self.showResult(self.face21, self.face22, self.text2, im, db, name)
-        elif num == 3:
-            self.showResult(self.face31, self.face32, self.text3, im, db, name)
-        elif num == 4:
-            self.showResult(self.face41, self.face42, self.text4, im, db, name)
-        elif num == 5:
-            self.showResult(self.face51, self.face52, self.text5, im, db, name)
-    def clearLabel(self,num):
-        if num == 1:
-            self.face11.setText(" ")
-            self.face12.setText(" ")
-            self.text1.setText(" ")
-        elif num ==2:
-            self.face21.setText(" ")
-            self.face22.setText(" ")
-            self.text2.setText(" ")
-        elif num == 3:
-            self.face31.setText(" ")
-            self.face32.setText(" ")
-            self.text3.setText(" ")
-        elif num == 4:
-            self.face41.setText(" ")
-            self.face42.setText(" ")
-            self.text4.setText(" ")
-        elif num == 5:
-            self.face51.setText(" ")
-            self.face52.setText(" ")
-            self.text5.setText(" ")
-
-    def playText(self, s, byte_im, db_im_s):
-        #print s
-        self.textLabel.setText(s)
-        self.image.loadFromData(QByteArray(byte_im))
-        self.face1.setPixmap(QPixmap.fromImage(self.image))
-
-        db_im = cv2.imread(db_im_s)
-        byte_im_db = convImg(db_im,220,300)
-        self.image.loadFromData(QByteArray(byte_im_db))
-        self.face2.setPixmap(QPixmap.fromImage(self.image))
+    #three QThreads of Three blocks of GUI 
     def playVideo(self,byte_im):
-        #begin = time.clock()
         self.image.loadFromData(QByteArray(byte_im))
         self.imageLabel.setPixmap(QPixmap.fromImage(self.image))
-        #end = time.clock()
-        #print("play video time is {}".format(end - begin))
     def playFace(self,byte_im):
         self.image.loadFromData(QByteArray(byte_im))
         if self.b_cnt == 1:
@@ -487,27 +301,32 @@ class MainWindow(QWidget):
             for i in range(0,11):
                 self.faces[i] = self.faces[i+1]
             self.faces[11] = byte_im
-
-    def playIdcard(self,s,id_byte_im,cap_byte_im):
-    	self.textLabel2.setText(s)
-        self.image.loadFromData(QByteArray(id_byte_im))
-        self.face2.setPixmap(QPixmap.fromImage(self.image))
-        self.image.loadFromData(QByteArray(cap_byte_im))
-        self.face1.setPixmap(QPixmap.fromImage(self.image))
-
+    def multiFaceNew(self, aGet):
+        if aGet[0] != "Stranger":
+            self.checkExist(aGet, self.arr)
+        self.checkDisappear(self.arr)
+        self.showSide(self.arr)
+    
+    #one database update Qthread
+    def updateDatabase(self):
+        self.DBstatus = 0
+        self.cancelButton.setText("UpdateDB")
+        self.databasetimer.stop()
+        print "Updating database completed!"
+    
+    #three buttons
     def VideoPlayPause(self):
-        #self.status, playstr, capturestr = ((1, 'pause', 'capture'), (0, 'play', 'capture'), (1, 'pause', 'capture'))[self.status]#三种状态分别对应的显示、处理
-        self.status, playstr = ((1, 'Pause'), (0, 'Play'))[self.status]
+        self.status, playstr = ((1, 'Play'), (0, 'Pause'))[self.status]
         self.playButton.setText(playstr)
         if self.status is 1:
-            self.playtimer.start()
-            self.facetimer.start()
-            self.texttimer.start()
-            #print ("playtimer id = {}, \nfacetimer id = {}, \ntexttimer id = {}".format(self.playtimer.currentThreadId,self.facetimer.currentThreadId,self.texttimer.currentThreadId))
-        else:
             self.playtimer.stop()
             self.facetimer.stop()
             self.texttimer.stop()
+        else:
+            self.playtimer.start()
+            self.facetimer.start()
+            self.texttimer.start()
+
     def DatabaseUpdataStop(self):
         self.DBstatus, cancelstr = ((1, 'updating, please wait ...'), (0, 'UpdateDB'))[self.DBstatus]
         self.cancelButton.setText(cancelstr)
@@ -515,13 +334,84 @@ class MainWindow(QWidget):
             self.databasetimer.start()
         else:
             self.databasetimer.stop()
+    def exitFun(self):
+        self.close()
+        self.terminateAll.value = not self.terminateAll.value
 
-    def updateDatabase(self):
-        self.DBstatus = 0
-        self.cancelButton.setText("UpdateDB")
-        self.databasetimer.stop()
-        print "Updating database completed!"
-
+    #supporting functions
+    def showSide(self,a):
+        for i in range(0,5):
+            if a[i][0] == "Stranger":
+                self.clearLabel(i+1)
+            else:
+                self.whichToShow(i+1, a[i][2], name2dbface(a[i][0]), a[i][0])
+    def checkDisappear(self,a):
+        for i in range(0,5):
+            if a[i][0] == "Stranger":
+                break
+            else:
+                a[i][1] +=1
+        for i in range(0,5):
+            if a[i][1] == 5:
+                self.shift(i,a)
+                i=i-1
+    def checkExist(self,aGet,a):
+        for i in range(0,5):
+            if a[i][0] == "Stranger":
+                a[i] = aGet
+                break
+            if aGet[0] == a[i][0]:
+                a[i] = aGet
+                break
+            if i == 4:
+                a[0] = aGet
+    def shift(self,num,a):
+        if num ==4:
+            a[4][0] = "Stranger"
+            a[4][1] = 0
+        else:
+            for i in range(num,4):
+                a[i] = a[i+1]
+            a[4][0] = "Stranger"
+            a[4][1] = 0
+    def showResult(self, imLabel1, imLabel2, tLabel, im, db, name):
+        self.image.loadFromData(QByteArray(im))
+        imLabel1.setPixmap(QPixmap.fromImage(self.image))
+        self.image.loadFromData(QByteArray(db))
+        imLabel2.setPixmap(QPixmap.fromImage(self.image))
+        tLabel.setText(name)
+    def whichToShow(self,num, im, db, name):
+        if num == 1:
+            self.showResult(self.face11, self.face12, self.text1, im, db, name)
+        elif num ==2:
+            self.showResult(self.face21, self.face22, self.text2, im, db, name)
+        elif num == 3:
+            self.showResult(self.face31, self.face32, self.text3, im, db, name)
+        elif num == 4:
+            self.showResult(self.face41, self.face42, self.text4, im, db, name)
+        elif num == 5:
+            self.showResult(self.face51, self.face52, self.text5, im, db, name)
+    def clearLabel(self,num):
+        if num == 1:
+            self.face11.setText(" ")
+            self.face12.setText(" ")
+            self.text1.setText(" ")
+        elif num ==2:
+            self.face21.setText(" ")
+            self.face22.setText(" ")
+            self.text2.setText(" ")
+        elif num == 3:
+            self.face31.setText(" ")
+            self.face32.setText(" ")
+            self.text3.setText(" ")
+        elif num == 4:
+            self.face41.setText(" ")
+            self.face42.setText(" ")
+            self.text4.setText(" ")
+        elif num == 5:
+            self.face51.setText(" ")
+            self.face52.setText(" ")
+            self.text5.setText(" ")
     def setTextFont(self,l, w = 250, h = 30, s = 8):
     	l.setFixedWidth(w)  
         l.setFixedHeight(h)  
@@ -546,30 +436,6 @@ class Timer(QThread):
     def run(self):
         with QMutexLocker(self.mutex):
             self.stoped = False     
-
-        '''
-        capture = cv2.VideoCapture(0)  
-        #capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi') 
-        while True:
-            time.sleep(0.04)
-            if self.stoped:
-                return
-
-            #begin = time.clock()
-            ret, face = capture.read()
-            if ret == True:
-                #out.write(face)
-                face = cv2.flip(face, 1)
-                if not self.qFace.full():
-                    self.qFace.put(face)
-                byte_im = convImg(face,1000,700)
-                #out.write(cv2.resize(face,(800,600)))
-                self.emit(SIGNAL(self.signal),byte_im)
-                
-            #end = time.clock()
-            #print("capture time is {}".format(end - begin))
-
-        '''
         while True:
             time.sleep(0.04)
             if self.stoped:
@@ -601,32 +467,7 @@ class FaceTimer(QThread):
                 return
             if not self.qSmallFace.empty():
                 self.emit(SIGNAL(self.signal), self.qSmallFace.get(True,3))
-            '''
-            if not self.qFace.empty():
-                img = self.qFace.get(True,3)
-                if isinstance(img, types.NoneType):
-                    #imgFace = cv2.imread("nopic.jpg")
-                    continue
-                else:
-                    gray=cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
-                    dets = detector(gray)
 
-                    list1 = [img,gray,dets]
-                    if not self.qList1.full():
-                            self.qList1.put(list1)
-
-                    if(len(dets)==0):
-                        continue
-                    else:
-                        for k, d in enumerate(dets):
-                            [x1,x2,y1,y2] = [d.left(),d.right(),d.top(),d.bottom()]
-                            if x1<0:
-                                x1 = 10
-                            if y1<0:
-                                y1 = 10
-                            imgFace = img[y1:y2,x1:x2,:]
-                            self.emit(SIGNAL(self.signal), convImg(imgFace,100,100))
-            '''
     def stop(self):
         with QMutexLocker(self.mutex):
             self.stoped = True
@@ -647,33 +488,13 @@ class TextTimer(QThread):
     def run(self):
         with QMutexLocker(self.mutex):
             self.stoped = False
-
         while True:
             time.sleep(0.1)
             if self.stoped:
                 return
             if not self.qPost.empty():
                 self.emit(SIGNAL(self.signal), self.qPost.get(True,3))
-            '''
-            if not qList1.empty():
-                img, gray, dets = qList1.get(True,3)
-                if(len(dets)==0):
-                    print "No face detected"
-                    self.emit(SIGNAL(self.signal), ["Stranger",0,0])
-                    continue
-                for k, d in enumerate(dets):
-                    [x1,x2,y1,y2] = [d.left(),d.right(),d.top(),d.bottom()]
-                    if x1<0:
-                        x1 = 10
-                    if y1<0:
-                        y1 = 10
-                    #print ("img_shape = {}".format(img.shape))
-                    imgFace = img[y1:y2,x1:x2,:]
-                    minkey, minscore = faceRec(img,gray,d)
-                    #if minkey != "Stranger":
-                    aPost = [minkey,0,convImg(imgFace,100,100)]
-                    self.emit(SIGNAL(self.signal), aPost)
-            '''
+
     def stop(self):
         with QMutexLocker(self.mutex):
             self.stoped = True
@@ -692,13 +513,13 @@ class DatabaseTimer(QThread):
     def run(self):
         with QMutexLocker(self.mutex):
             self.stoped = False
-
         while True:
             if self.stoped:
                 return
             databaseUpdate()
-            self.emit(SIGNAL(self.signal))  
-            time.sleep(0.04)     
+            self.emit(SIGNAL(self.signal))
+            break
+
     def stop(self):
         with QMutexLocker(self.mutex):
             self.stoped = True
@@ -707,17 +528,77 @@ class DatabaseTimer(QThread):
         with QMutexLocker(sellf.mutex):
             return self.stoped
 
+class CaptureProcess(multiprocessing.Process):
+    def __init__(self,qCapture,qFace):
+        multiprocessing.Process.__init__(self)
+        self.qCapture = qCapture
+        self.qFace = qFace
+    def run(self):
+        #capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
+        #capture = cv2.VideoCapture('../Testdata/20170528.avi')
+        capture = cv2.VideoCapture(0)
+        while True:
+            #begin = time.clock()
+            ret, face = capture.read()
+            if ret == True:
+                #out.write(face)
+                face = cv2.flip(face, 1)
+                byte_im = convImg(face,1000,700)
+
+                #it not necessary to judge whether the queue is full,
+                #because when the FIFO-queue is full, 
+                #it will remove the head item and put the new itme at the tail
+                self.qCapture.put(byte_im)
+                self.qFace.put(face)
+                
+                #end = time.clock()
+                #print("capture time is {}".format(end - begin))
+
+class SmallFace(multiprocessing.Process):
+    def __init__(self,qFace,qList1,qSmallFace):
+        multiprocessing.Process.__init__(self)
+        self.qFace = qFace
+        self.qList1 = qList1
+        self.qSmallFace = qSmallFace
+    def run(self):
+        while True:
+            if not self.qFace.empty():
+                img = self.qFace.get(True,3)
+                if isinstance(img, types.NoneType):
+                    continue
+                else:
+                    gray=cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+                    dets = detector(gray)
+
+                    list1 = [img,gray,dets]
+                    if not self.qList1.full():
+                            self.qList1.put(list1)
+
+                    if(len(dets)==0):
+                        continue
+                    else:
+                        for k, d in enumerate(dets):
+                            [x1,x2,y1,y2] = [d.left(),d.right(),d.top(),d.bottom()]
+                            if x1<0:
+                                x1 = 10
+                            if y1<0:
+                                y1 = 10
+                            imgFace = img[y1:y2,x1:x2,:]
+                            if not self.qSmallFace.full():
+                                self.qSmallFace.put(convImg(imgFace,100,100))
+
 class RecProcess(multiprocessing.Process):
-    def __init__(self, qList, qPost):
+    def __init__(self, qList, qPost, loadNetEndFlag):
         multiprocessing.Process.__init__(self)
         self.qList = qList
         self.qPost = qPost
+        self.loadNetEndFlag = loadNetEndFlag
     def run(self):
         caffe.set_mode_gpu()
-        caffe.set_device(0)
+        #caffe.set_device(0)
 
         begin = time.clock()
-        global net_ctf,net_downmouth,net_eye,net_le,net_re,net_wholeface,net_mouth
+        #global net_ctf,net_downmouth,net_eye,net_le,net_re,net_wholeface,net_mouth
         net_wholeface = caffe.Net('../Models/face_deploy.prototxt',
                             '../Models/wholeface_iter_28000.caffemodel',
                             caffe.TEST)
@@ -744,6 +625,8 @@ class RecProcess(multiprocessing.Process):
 
         print "you can now click play to start!"
 
+        self.loadNetEndFlag.value = not self.loadNetEndFlag.value
+
         while True:
             if not self.qList.empty():
                 img, gray, dets = self.qList.get(True,3)
@@ -759,108 +642,11 @@ class RecProcess(multiprocessing.Process):
                         x1 = 10
                     if y1<0:
                         y1 = 10
-                    #print ("img_shape = {}".format(img.shape))
                     imgFace = img[y1:y2,x1:x2,:]
                     minkey, minscore = faceRec(net_wholeface,net_ctf,net_le,net_re,net_eye,net_mouth,net_downmouth,img,gray,d)
-                    #if minkey != "Stranger":
                     aPost = [minkey,0,convImg(imgFace,100,100)]
                     if not self.qPost.full():
                         self.qPost.put(aPost)
-
-class CaptureProcess(multiprocessing.Process):
-    def __init__(self,qCapture,qFace):
-        multiprocessing.Process.__init__(self)
-        self.qCapture = qCapture
-        self.qFace = qFace
-    def run(self):
-        #capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
-        #capture = cv2.VideoCapture('../Testdata/20170528.avi')
-        capture = cv2.VideoCapture(0)
-        while True:
-            begin = time.clock()
-            ret, face = capture.read()
-            if ret == True:
-                #out.write(face)
-                face = cv2.flip(face, 1)
-                byte_im = convImg(face,1000,700)
-
-                #it not necessary to judge whether the queue is full,
-                #because when the FIFO-queue is full, 
-                #it will remove the head item and put the new itme at the tail
-                self.qCapture.put(byte_im)
-                self.qFace.put(face)
-                '''
-                if not self.qCapture.full():
-                    self.qCapture.put(byte_im)
-                else:
-                    self.qCapture.get(True,3)
-                    self.qCapture.put(byte_im)
-
-                if not self.qFace.full():
-                    print("qFace full is {}".format(qFace.full()))
-                    print self.qFace.qsize()
-                    self.qFace.put(9)
-                    self.qFace.put(8)
-                    self.qFace.put(7)
-                    self.qFace.put(6)
-                    print self.qFace.get()
-                    print self.qFace.get()
-                    print self.qFace.get()
-                    #self.qFace.put(face)
-                    print "qFace put!!!"
-                else:
-                    print self.qFace.qsize()
-                    print("qFace empty is {}".format(qFace.empty()))
-                    print("qFace full is {}".format(qFace.full()))
-                    self.qFace.clear()
-                    self.qFace.put(face)
-                '''
-                
-                end = time.clock()
-                #print("capture time is {}".format(end - begin))
-
-class SmallFace(multiprocessing.Process):
-    def __init__(self,qFace,qList1,qSmallFace):
-        multiprocessing.Process.__init__(self)
-        self.qFace = qFace
-        self.qList1 = qList1
-        self.qSmallFace = qSmallFace
-    def run(self):
-        while True:
-            if not self.qFace.empty():
-                img = self.qFace.get(True,3)
-                if isinstance(img, types.NoneType):
-                    #imgFace = cv2.imread("nopic.jpg")
-                    continue
-                else:
-                    gray=cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
-                    dets = detector(gray)
-
-                    list1 = [img,gray,dets]
-                    if not self.qList1.full():
-                            self.qList1.put(list1)
-
-                    if(len(dets)==0):
-                        continue
-                    else:
-                        for k, d in enumerate(dets):
-                            [x1,x2,y1,y2] = [d.left(),d.right(),d.top(),d.bottom()]
-                            if x1<0:
-                                x1 = 10
-                            if y1<0:
-                                y1 = 10
-                            imgFace = img[y1:y2,x1:x2,:]
-                            if not self.qSmallFace.full():
-                                self.qSmallFace.put(convImg(imgFace,100,100))
-
-
-qFace = multiprocessing.Queue(3)
-qList1 = multiprocessing.Queue(1)
-qPost = multiprocessing.Queue(5)
-qCapture = multiprocessing.Queue(10)
-qSmallFace = multiprocessing.Queue(12)
-
-terminateAll = multiprocessing.Value("i", 0)
 
 class ShowWindow(multiprocessing.Process):
     def __init__(self,qFace,qList1,qPost,qCapture,qSmallFace,terminateAll):
@@ -876,18 +662,30 @@ class ShowWindow(multiprocessing.Process):
         mainwindow = MainWindow(self.qFace, self.qList1,self.qPost,self.qCapture,self.qSmallFace,self.terminateAll)
         mainwindow.show()
         sys.exit(app.exec_())
+
+qFace = multiprocessing.Queue(3)
+qList1 = multiprocessing.Queue(1)
+qPost = multiprocessing.Queue(5)
+qCapture = multiprocessing.Queue(10)
+qSmallFace = multiprocessing.Queue(12)
+
+terminateAll = multiprocessing.Value("i", 0)
+loadNetEndFlag = multiprocessing.Value("i", 0)
+
 if __name__ == '__main__':
     showwindow = ShowWindow(qFace,qList1,qPost,qCapture,qSmallFace,terminateAll)
-    recprocess = RecProcess(qList1,qPost)
+    recprocess = RecProcess(qList1,qPost,loadNetEndFlag)
     captureprocess = CaptureProcess(qCapture,qFace)
     smallface = SmallFace(qFace,qList1,qSmallFace)
 
     recprocess.start()
-    time.sleep(12)
-    captureprocess.start()
-    smallface.start()
-    showwindow.start()
-
+    while True:
+        if loadNetEndFlag.value:
+            captureprocess.start()
+            smallface.start()
+            showwindow.start()
+            print "All processes have started."
+            break
     while True:
         if terminateAll.value:
             captureprocess.terminate()
@@ -898,7 +696,6 @@ if __name__ == '__main__':
             break
 
 '''
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     mainwindow = MainWindow(qFace, qList1,qPost,qCapture)#,playtimerOut,facetimerOut,texttimerOut,databasetimerOut)
