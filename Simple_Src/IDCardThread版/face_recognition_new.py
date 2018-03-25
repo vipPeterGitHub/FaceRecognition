@@ -60,6 +60,7 @@ import threading
 import multiprocessing
 from multiprocessing import Process, Pool
 #########################
+    
 
 
 def feat_norm(feat):
@@ -127,7 +128,7 @@ def getfeat_github(net,img):
         tmp[i]=feat[i]**2
     repfeat=feat/np.sqrt(sum(tmp.transpose()))
     return repfeat
-
+    
 def getallfeat(shape,img):
     start=time.clock()
     imgs=normSingle(shape,img)
@@ -142,6 +143,7 @@ def getallfeat(shape,img):
     feat_downmouth=getfeat_github(net_downmouth,imgs[6])
     feat=np.concatenate((feat_wholeface,feat_ctf,feat_le,feat_re,feat_eye,feat_mouth,feat_downmouth),axis=1)
     return feat
+
 
 def getallfeatNew(shape,img,net_wholeface,net_ctf,net_le,net_re,net_eye,net_mouth,net_downmouth):
     start=time.clock()
@@ -253,7 +255,7 @@ def getscore(A,G,feat,database):
         if(score>maxscore):
             maxscore=score
             anskey=key
-    if(maxscore<245):#id card: 140, multiface: 245
+    if(maxscore<140):#id card: 140, multiface: 245
         anskey='Stranger'
     #with open(fileRes,'a+') as fr:
     #	fr.write('No. '+ str(num) +' anskey = '+str(anskey)+'  maxscore = '+str(maxscore)+'\r')
@@ -305,7 +307,7 @@ predictor = dlib.shape_predictor(predictor_path)
 caffe.set_mode_gpu()
 #caffe.set_device(0)
 
-'''
+
 global net_ctf,net_downmouth,net_eye,net_le,net_re,net_wholeface,net_mouth
 net_wholeface = caffe.Net('../Models/face_deploy.prototxt',
                     '../Models/wholeface_iter_28000.caffemodel',
@@ -328,7 +330,6 @@ net_mouth = caffe.Net('../Models/face_deploy.prototxt',
 net_downmouth = caffe.Net('../Models/face_deploy.prototxt',
                     '../Models/downmouth_iter_28000.caffemodel',
                     caffe.TEST)
-'''
 
 
 # Import Lab database
@@ -405,9 +406,7 @@ filename = '20170528.avi'
 #capture = cv2.VideoCapture('../Testdata/20170528.avi')
 #capture = cv2.VideoCapture(0)
 
-
-
-
+'''
 def faceRec(net_wholeface,net_ctf,net_le,net_re,net_eye,net_mouth,net_downmouth, img, gray, d, DB = db_qf):
     begin = time.clock()
     shape = predictor(gray, d)
@@ -432,8 +431,26 @@ def faceRec(img, gray, d, DB = db_qf):
     end = time.clock()
     print ("Face calculation time is {}".format(end-begin))
     return minkey,minscore
-'''
 
+'''
+def faceRecQueue(qlist, q):
+    img = qlist[0]
+    gray = qlist[1]
+    d = qlist[2]
+'''
+def faceRecQueue(img, gray, d, q):
+
+    begin = time.clock()
+    shape = predictor(gray, d)
+    feat_pca = np.dot(getallfeat(shape,img)-mean,compoT)
+    minkey,minscore=getscore(A,G,feat_pca,db_qf)
+    print ("minscore is {}, minkey is {}".format(str(int(minscore)),minkey))
+    end = time.clock()
+    print ("Face calculation time is {}".format(end-begin))
+    list2 = [minkey,minscore]
+    if not q.full():
+        q.put(list2)
+    #return minkey,minscore
 
 ##############################################################################
 '''
@@ -755,7 +772,7 @@ class FaceDetector(object):
         weights_O = './model/det3.caffemodel'
         
         caffe.set_mode_gpu()
-        #caffe.set_device(gpuid)
+        caffe.set_device(gpuid)
         
         self.PNet = caffe.Net(model_P, weights_P, caffe.TEST) 
         self.RNet = caffe.Net(model_R, weights_R, caffe.TEST)
@@ -920,7 +937,7 @@ class FaceDetector(object):
         
     def LoadNet(self,model,weights):
         caffe.set_mode_gpu()
-        #caffe.set_device(0)
+        caffe.set_device(0)
         Net = caffe.Net(model, weights, caffe.TEST)
         return Net
     
@@ -1050,31 +1067,6 @@ class FaceDetector(object):
 
 def databaseUpdate():
 
-    caffe.set_mode_gpu()
-    net_wholeface = caffe.Net('../Models/face_deploy.prototxt',
-                        '../Models/wholeface_iter_28000.caffemodel',
-                        caffe.TEST)
-    net_ctf = caffe.Net('../Models/face_deploy.prototxt',
-                        '../Models/ctf_iter_28000.caffemodel',
-                        caffe.TEST)
-    net_le = caffe.Net('../Models/face_deploy.prototxt',
-                        '../Models/le_iter_28000.caffemodel',
-                        caffe.TEST)
-    net_re = caffe.Net('../Models/face_deploy.prototxt',
-                        '../Models/re_iter_28000.caffemodel',
-                        caffe.TEST)
-    net_eye = caffe.Net('../Models/face_deploy.prototxt',
-                        '../Models/eye_iter_28000.caffemodel',
-                        caffe.TEST)
-    net_mouth = caffe.Net('../Models/face_deploy.prototxt',
-                        '../Models/mouth_iter_28000.caffemodel',
-                        caffe.TEST)
-    net_downmouth = caffe.Net('../Models/face_deploy.prototxt',
-                        '../Models/downmouth_iter_28000.caffemodel',
-                        caffe.TEST)
-
-    print "Loading new done!"
-
     mtcnn_detector = FaceDetector(minsize = 80, gpuid = 0, fastresize = False)
     database = {'Name': 'Feature'};
     database.clear();
@@ -1107,7 +1099,7 @@ def databaseUpdate():
             continue
         for k, d in enumerate(dets):
             shape = predictor(gray, d) 
-            feat=getallfeatNew(shape,im,net_wholeface,net_ctf,net_le,net_re,net_eye,net_mouth,net_downmouth)
+            feat=getallfeat(shape,im)
         #database[file.split('.')[0]]=clt_pca.transform(feat)
         database[file.split('.')[0]]=np.dot(feat-mean,compoT)
         cnt=cnt+1

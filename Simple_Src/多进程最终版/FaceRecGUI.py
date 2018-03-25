@@ -1,5 +1,5 @@
 #coding=utf-8
-from face_recognition_new_process import *
+from import_by_FaceRecGUI import *
 caffe.set_mode_gpu()
 
 
@@ -52,6 +52,7 @@ def readIDcard():
         picklePath = 0
     return id_num, byte_im, picklePath
 
+'''
 def cropFace(img):
     gray=cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
     dets = detector(gray)
@@ -65,9 +66,13 @@ def name2dbface(name):
     db_im = cv2.imread('../Database/'+name+'.jpg')
     db_im_face = cropFace(db_im)
     return convImg(db_im_face,100,100)
+'''
+def name2dbface(name):
+    db_im_face = cv2.imread('../DatabaseFace/'+name+'.jpg')
+    return convImg(db_im_face,100,100)
 
 class MainWindow(QWidget):
-    def __init__(self, qFace, qList1, qPost, qCapture, qSmallFace, terminateAll):
+    def __init__(self, qFace, qList, qPost, qCapture, qSmallFace, terminateAll):
         super(MainWindow, self).__init__()
         self.setWindowTitle('Face Recognition')
         self.resize(1200, 850)
@@ -192,7 +197,7 @@ class MainWindow(QWidget):
         self.setLayout(self.whole)
 
         self.qFace = qFace
-        self.qList1 = qList1
+        self.qList = qList
         self.qPost = qPost
         self.qCapture = qCapture
         self.qSmallFace = qSmallFace
@@ -555,10 +560,10 @@ class CaptureProcess(multiprocessing.Process):
                 #print("capture time is {}".format(end - begin))
 
 class SmallFace(multiprocessing.Process):
-    def __init__(self,qFace,qList1,qSmallFace):
+    def __init__(self,qFace,qList,qSmallFace):
         multiprocessing.Process.__init__(self)
         self.qFace = qFace
-        self.qList1 = qList1
+        self.qList = qList
         self.qSmallFace = qSmallFace
     def run(self):
         while True:
@@ -571,8 +576,8 @@ class SmallFace(multiprocessing.Process):
                     dets = detector(gray)
 
                     list1 = [img,gray,dets]
-                    if not self.qList1.full():
-                            self.qList1.put(list1)
+                    if not self.qList.full():
+                            self.qList.put(list1)
 
                     if(len(dets)==0):
                         continue
@@ -649,22 +654,22 @@ class RecProcess(multiprocessing.Process):
                         self.qPost.put(aPost)
 
 class ShowWindow(multiprocessing.Process):
-    def __init__(self,qFace,qList1,qPost,qCapture,qSmallFace,terminateAll):
+    def __init__(self,qFace,qList,qPost,qCapture,qSmallFace,terminateAll):
         multiprocessing.Process.__init__(self)
         self.qFace = qFace
-        self.qList1 = qList1
+        self.qList = qList
         self.qPost = qPost
         self.qCapture = qCapture
         self.terminateAll = terminateAll
         self.qSmallFace = qSmallFace
     def run(self):
         app = QApplication(sys.argv)
-        mainwindow = MainWindow(self.qFace, self.qList1,self.qPost,self.qCapture,self.qSmallFace,self.terminateAll)
+        mainwindow = MainWindow(self.qFace, self.qList,self.qPost,self.qCapture,self.qSmallFace,self.terminateAll)
         mainwindow.show()
         sys.exit(app.exec_())
 
 qFace = multiprocessing.Queue(3)
-qList1 = multiprocessing.Queue(1)
+qList = multiprocessing.Queue(1)
 qPost = multiprocessing.Queue(5)
 qCapture = multiprocessing.Queue(10)
 qSmallFace = multiprocessing.Queue(12)
@@ -673,10 +678,10 @@ terminateAll = multiprocessing.Value("i", 0)
 loadNetEndFlag = multiprocessing.Value("i", 0)
 
 if __name__ == '__main__':
-    showwindow = ShowWindow(qFace,qList1,qPost,qCapture,qSmallFace,terminateAll)
-    recprocess = RecProcess(qList1,qPost,loadNetEndFlag)
+    showwindow = ShowWindow(qFace,qList,qPost,qCapture,qSmallFace,terminateAll)
+    recprocess = RecProcess(qList,qPost,loadNetEndFlag)
     captureprocess = CaptureProcess(qCapture,qFace)
-    smallface = SmallFace(qFace,qList1,qSmallFace)
+    smallface = SmallFace(qFace,qList,qSmallFace)
 
     recprocess.start()
     while True:
@@ -698,7 +703,7 @@ if __name__ == '__main__':
 '''
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    mainwindow = MainWindow(qFace, qList1,qPost,qCapture)#,playtimerOut,facetimerOut,texttimerOut,databasetimerOut)
+    mainwindow = MainWindow(qFace, qList,qPost,qCapture)#,playtimerOut,facetimerOut,texttimerOut,databasetimerOut)
     mainwindow.show()
     sys.exit(app.exec_())
 '''
