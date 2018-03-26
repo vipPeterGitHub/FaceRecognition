@@ -129,6 +129,30 @@ def getfeat_github(net,img):
     repfeat=feat/np.sqrt(sum(tmp.transpose()))
     return repfeat
     
+def img2feat(img,mean,compoT):
+    gray=cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+    dets = detector(gray)
+    if(len(dets)==0):
+        feat = 0
+        print "No face detected"
+        return feat
+    for k, d in enumerate(dets):
+        shape = predictor(gray, d)
+        feat = np.dot(getallfeat(shape,img)-mean,compoT)
+        return feat
+        break
+    
+
+def compareFace(img1,img2,mean,compoT,A,G):
+    feat1 = img2feat(img1,mean,compoT)
+    if feat1 == 0:
+        score = 0
+        return score
+    else:
+        feat2 = img2feat(img2,mean,compoT)
+        score = get_ratios(A,G,feat1,feat2)
+        return score
+
 def getallfeat(shape,img):
     start=time.clock()
     imgs=normSingle(shape,img)
@@ -431,319 +455,6 @@ def faceRec(img, gray, d, DB = db_qf):
     end = time.clock()
     print ("Face calculation time is {}".format(end-begin))
     return minkey,minscore
-
-'''
-def faceRecQueue(qlist, q):
-    img = qlist[0]
-    gray = qlist[1]
-    d = qlist[2]
-'''
-def faceRecQueue(img, gray, d, q):
-
-    begin = time.clock()
-    shape = predictor(gray, d)
-    feat_pca = np.dot(getallfeat(shape,img)-mean,compoT)
-    minkey,minscore=getscore(A,G,feat_pca,db_qf)
-    print ("minscore is {}, minkey is {}".format(str(int(minscore)),minkey))
-    end = time.clock()
-    print ("Face calculation time is {}".format(end-begin))
-    list2 = [minkey,minscore]
-    if not q.full():
-        q.put(list2)
-    #return minkey,minscore
-
-##############################################################################
-'''
-def convImg(img,w,h):
-    resize_im=cv2.resize(img,(w,h))
-    cv2_im = cv2.cvtColor(resize_im,cv2.COLOR_BGR2RGB)
-    pil_im = Image.fromarray(cv2_im)
-    byte_im = pil_im.convert('RGB').tobytes('jpeg', 'RGB')
-    return byte_im
-
-class MainWindow(QWidget):
-    def __init__(self, qFace, qDet, qGray, qImg):
-        super(MainWindow, self).__init__()
-        self.status = 0
-        self.playButton = QPushButton("Play")
-        self.cancelButton = QPushButton("Cancel")
-        self.exitbtn = QPushButton('exit')
-        self.image = QImage()
-        self.imageLabel = QLabel('')
-        self.faceLabel = QLabel('')
-        self.idLabel = QLabel('')
-        self.textLabel = QLabel("Hello World!")
-        self.textLabel.setFixedWidth(1170)  
-        self.textLabel.setFixedHeight(100)  
-        self.textLabel.setAlignment(Qt.AlignCenter)
-        self.textLabel.setFont(QFont("Roman times",50,QFont.Bold))
-
-        self.twoFace = QVBoxLayout()
-        self.twoFace.addWidget(self.faceLabel)
-        #self.twoFace.addStretch(1)
-        self.twoFace.addWidget(self.idLabel)
-
-        self.videoImage = QHBoxLayout()
-        self.videoImage.addWidget(self.imageLabel)
-        #self.videoImage.addStretch()
-        self.videoImage.addLayout(self.twoFace)
-
-        self.buttons = QHBoxLayout()
-        #hbox.addStretch(1)
-        self.buttons.addWidget(self.playButton)
-        self.buttons.addWidget(self.cancelButton)
-        self.buttons.addWidget(self.exitbtn)
-
-        self.whole = QVBoxLayout()
-        self.whole.addLayout(self.videoImage)
-        self.whole.addWidget(self.textLabel)
-        self.whole.addLayout(self.buttons)
-        
-        self.setLayout(self.whole)
-
-        self.showImageLabel('nopic.jpg')
-        self.showFaceLabel('nopic.jpg')
-        self.showIdLabel('nopic.jpg')
-        self.qFace = qFace
-        self.qDet = qDet
-        self.qGray = qGray
-        self.qImg = qImg
-        self.playtimer = Timer("videoPlay", self.qFace)
-        self.facetimer = FaceTimer(self.qFace, "facePlay", self.qDet, self.qGray, self.qImg)
-        self.idcardtimer = IdcardTimer("idcardPlay")
-        self.texttimer = TextTimer(self.qDet, self.qGray, self.qImg, "textPlay")
-
-        self.connect(self.texttimer, SIGNAL("textPlay"), self.playText)
-
-        self.connect(self.playtimer, SIGNAL("videoPlay"), self.playVideo)
-        self.connect(self.facetimer, SIGNAL("facePlay"), self.playFace)
-        self.connect(self.idcardtimer, SIGNAL("idcardPlay"), self.playIdcard)
-        self.connect(self.exitbtn, SIGNAL("clicked()"), self,SLOT('close()'))
-        self.connect(self.playButton, SIGNAL("clicked()"), self.VideoPlayPause)
-        #self.connect(self.exitbtn, SIGNAL("clicked()"), self.exit)
-        self.setWindowTitle('Face Recognition')
-        self.resize(1170, 800)
-
-    def playText(self, s):
-        print s
-        self.textLabel.setText(s)
-
-    def playVideo(self,byte_im):
-        self.image.loadFromData(QByteArray(byte_im))
-        self.imageLabel.setPixmap(QPixmap.fromImage(self.image))
-    def playFace(self,byte_im):
-        self.image.loadFromData(QByteArray(byte_im))
-        self.faceLabel.setPixmap(QPixmap.fromImage(self.image))
-    def playIdcard(self,byte_im):
-        self.image.loadFromData(QByteArray(byte_im))
-        self.idLabel.setPixmap(QPixmap.fromImage(self.image))
-        
-    def VideoPlayPause(self):
-        #self.status, playstr, capturestr = ((1, 'pause', 'capture'), (0, 'play', 'capture'), (1, 'pause', 'capture'))[self.status]#三种状态分别对应的显示、处理
-        self.status, playstr = ((1, 'pause'), (0, 'play'))[self.status]
-        self.playButton.setText(playstr)
-        if self.status is 1:
-            #self.timer.stop()
-            self.playtimer.start()
-            self.facetimer.start()
-            self.idcardtimer.start()
-            self.texttimer.start()
-        else:
-            self.playtimer.stop()
-            self.facetimer.stop()
-            self.idcardtimer.stop()
-            self.texttimer.stop()
-
-    def showImageLabel(self,im):
-        orig_im = cv2.imread(im)
-        #resize_im=cv2.resize(orig_im,(900,630))
-        #cv2_im = cv2.cvtColor(resize_im,cv2.COLOR_BGR2RGB)
-        #pil_im = Image.fromarray(cv2_im)
-        #byte_im = pil_im.convert('RGB').tobytes('jpeg', 'RGB')
-        byte_im = convImg(orig_im,900,630)
-        self.image.loadFromData(QByteArray(byte_im))
-        self.imageLabel.setPixmap(QPixmap.fromImage(self.image))
-        #self.imageLabel.setScaledContents(True)
-    def showFaceLabel(self,im):
-        orig_im = cv2.imread(im)
-        byte_im = convImg(orig_im,220,300)
-        self.image.loadFromData(QByteArray(byte_im))
-        self.faceLabel.setPixmap(QPixmap.fromImage(self.image))
-        #self.faceLabel.setScaledContents(True)
-    def showIdLabel(self,im):
-        orig_im = cv2.imread(im)
-        byte_im = convImg(orig_im,220,300)
-        self.image.loadFromData(QByteArray(byte_im))
-        self.idLabel.setPixmap(QPixmap.fromImage(self.image))
-        #self.idLabel.setScaledContents(True)
-
-class TextTimer(QThread):
-    
-    def __init__(self, qDet = Queue.Queue(4), 
-                        qGray = Queue.Queue(4), qImg = Queue.Queue(4),
-                        signal = "updateTime", parent=None):
-        super(TextTimer, self).__init__(parent)
-        self.stoped = False
-        self.signal = signal
-        self.mutex = QMutex()
-
-    def run(self):
-        with QMutexLocker(self.mutex):
-            self.stoped = False
-
-        while True:
-            if self.stoped:
-                return
-            if not qDet.empty():
-                d= qDet.get(True,3)
-                gray = qGray.get(True,3)
-                img = qImg.get(True,3) #get*3<0.001s
-                begin = time.clock()
-                shape = predictor(gray, d) #0.06s
-                begin = time.clock()
-                feat_pca = np.dot(getallfeat(shape,img)-mean,compoT) #4s
-                end = time.clock()
-                print ("processing time is {}".format(end-begin))
-                minkey,minscore=getscore(A,G,feat_pca,db_qf)
-                print ("minkey is {}".format(minkey))
-                s = str(minscore)+" "+minkey
-                self.emit(SIGNAL(self.signal),s)
-                #time.sleep(0.04)
-
-    
-    def stop(self):
-        with QMutexLocker(self.mutex):
-            self.stoped = True
-
-    def isStoped(self):    
-        with QMutexLocker(sellf.mutex):
-            return self.stoped
-
-class Timer(QThread):
-    
-    def __init__(self, signal = "updateTime", qFace = Queue.Queue(4), parent=None):
-        super(Timer, self).__init__(parent)
-        self.stoped = False
-        self.signal = signal
-        self.mutex = QMutex()
-
-    def run(self):
-        with QMutexLocker(self.mutex):
-            self.stoped = False
-        #camera = cv2.VideoCapture('../Testdata/20170614.avi')
-        #camera = cv2.VideoCapture(1)
-        
-        while True:
-            if self.stoped:
-                return
-            ret, face = capture.read()
-            if not qFace.full():
-                qFace.put(face)
-            byte_im = convImg(face,900,630)
-            self.emit(SIGNAL(self.signal),byte_im)
-            time.sleep(0.04)
-    
-    def stop(self):
-        with QMutexLocker(self.mutex):
-            self.stoped = True
-
-    def isStoped(self):    
-        with QMutexLocker(sellf.mutex):
-            return self.stoped
-
-class FaceTimer(QThread):
-    
-    def __init__(self, qFace = Queue.Queue(4), signal = "updateTime", 
-                        qDet = Queue.Queue(4), qGray = Queue.Queue(4), 
-                        qImg = Queue.Queue(4), parent=None):
-        super(FaceTimer, self).__init__(parent)
-        self.stoped = False
-        self.signal = signal
-        self.mutex = QMutex()
-
-
-    def run(self):
-        with QMutexLocker(self.mutex):
-            self.stoped = False
-        while True:
-            if self.stoped:
-                return
-            if not qFace.empty():
-                img = qFace.get(True,3)
-                #print ("type is {}".format(type(img)))
-                if isinstance(img, types.NoneType):
-                    img = cv2.imread("nopic.jpg")
-                else:
-                    gray=cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
-                    print gray.shape
-                    dets = detector(gray)
-                    if(len(dets)==0):
-                        print "No face detected"
-                        minkey = 'Stranger'
-                        img = cv2.imread("nopic.jpg")
-                    else:
-                        for k, d in enumerate(dets):
-                            if not qDet.full():
-                                qDet.put(d)
-                                qGray.put(gray)
-                                qImg.put(img)
-                            [x1,x2,y1,y2] = [d.left(),d.right(),d.top(),d.bottom()]
-                            if x1<0:
-                                x1 = 10
-                            #print ("img_shape = {}".format(img.shape))
-                            img = img[y1:y2,x1:x2,:]
-                            #print ("x1={}x2={}y1{}y2{}".format(x1,x2,y1,y2))
-                            break
-
-                byte_im = convImg(img,220,300)
-                self.emit(SIGNAL(self.signal),byte_im)
-                time.sleep(0.04)
-    def stop(self):
-        with QMutexLocker(self.mutex):
-            self.stoped = True
-
-    def isStoped(self):    
-        with QMutexLocker(sellf.mutex):
-            return self.stoped
-
-class IdcardTimer(QThread):
-    
-    def __init__(self, signal = "updateTime", parent=None):
-        super(IdcardTimer, self).__init__(parent)
-        self.stoped = False
-        self.signal = signal
-        self.mutex = QMutex()
-
-    def run(self):
-        with QMutexLocker(self.mutex):
-            self.stoped = False
-        while True:
-            if self.stoped:
-                return
-            face = cv2.imread('hou.bmp')
-            byte_im = convImg(face,220,300)
-            self.emit(SIGNAL(self.signal),byte_im)
-            time.sleep(0.04)
-    
-    def stop(self):
-        with QMutexLocker(self.mutex):
-            self.stoped = True
-
-    def isStoped(self):    
-        with QMutexLocker(sellf.mutex):
-            return self.stoped
-
-qFace = Queue.Queue(10)
-qDet = Queue.Queue(10)
-qGray = Queue.Queue(10)
-qImg = Queue.Queue(10)
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    mainwindow = MainWindow(qFace, qDet, qGray, qImg)
-    mainwindow.show()
-    sys.exit(app.exec_())
-'''
-###########################################################################
 
 
 class FaceDetector(object):
@@ -1134,17 +845,3 @@ def createDatabase(id_num,picPath,picklePath):# one picture database
         pickle.dump(database,f,-1)
         f.close()
         print "DB file has been created! "
-
-def compareFace(face,picklePath):
-    f = open(picklePath,'rb')
-    DB=pickle.load(f)
-    f.close()
-    gray=cv2.cvtColor(face,cv2.COLOR_RGB2GRAY)
-    dets = detector(gray)
-    for k, d in enumerate(dets):
-        shape = predictor(gray, d) 
-        #feat_pca=clt_pca.transform(getallfeat(shape,img))
-        feat_pca = np.dot(getallfeat(shape,face)-mean,compoT)
-        minkey,minscore=getscore(A,G,feat_pca,DB)
-
-    print ("compare result is: Minkey = {}, Minscore = {}".format(minkey,minscore))

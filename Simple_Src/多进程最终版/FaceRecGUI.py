@@ -482,7 +482,6 @@ class FaceTimer(QThread):
             return self.stoped
 
 class TextTimer(QThread):
-    
     def __init__(self, signal = "updateTime", qPost = multiprocessing.Queue(3), parent=None):
         super(TextTimer, self).__init__(parent)
         self.stoped = False
