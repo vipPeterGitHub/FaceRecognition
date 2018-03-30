@@ -1,10 +1,18 @@
 #coding=utf-8
-from face_recognition_new import *
+from import_by_IdcardWindowThread import *
 caffe.set_mode_gpu()
 
 #capture = cv2.VideoCapture('../Testdata/20170528.avi')
 #capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
+#capture = cv2.VideoCapture(0)
+fourcc = cv2.VideoWriter_fourcc(*"DIVX")#(*"XVID")
+saveVideoPath = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) +'.avi'
+saveVideoPath2 = 'CaptureRecording1.avi'
+out = cv2.VideoWriter(saveVideoPath,fourcc,10,(640,480))#(1920,1080)) # 10 is speed. 640,480
 capture = cv2.VideoCapture(0)
+capture.set(cv2.CAP_PROP_FRAME_WIDTH,640)
+capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
+
 
 def convImg(img,w,h):
     resize_im=cv2.resize(img,(w,h))
@@ -214,16 +222,13 @@ class Timer(QThread):
     def run(self):
         with QMutexLocker(self.mutex):
             self.stoped = False
-        #camera = cv2.VideoCapture('../Testdata/20170614.avi')
-        #camera = cv2.VideoCapture(1)
-        
         while True:
             if self.stoped:
                 return
             begin = time.clock()
             ret, face = capture.read()
-            #out.write(face)
             face = cv2.flip(face, 1)
+            out.write(face)
             if not qFace.full():
                 qFace.put(face)
             else:

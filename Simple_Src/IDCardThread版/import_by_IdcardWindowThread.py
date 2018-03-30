@@ -128,30 +128,6 @@ def getfeat_github(net,img):
         tmp[i]=feat[i]**2
     repfeat=feat/np.sqrt(sum(tmp.transpose()))
     return repfeat
-    
-def img2feat(img,mean,compoT):
-    gray=cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
-    dets = detector(gray)
-    if(len(dets)==0):
-        feat = 0
-        print "No face detected"
-        return feat
-    for k, d in enumerate(dets):
-        shape = predictor(gray, d)
-        feat = np.dot(getallfeat(shape,img)-mean,compoT)
-        return feat
-        break
-    
-
-def compareFace(img1,img2,mean,compoT,A,G):
-    feat1 = img2feat(img1,mean,compoT)
-    if feat1 == 0:
-        score = 0
-        return score
-    else:
-        feat2 = img2feat(img2,mean,compoT)
-        score = get_ratios(A,G,feat1,feat2)
-        return score
 
 def getallfeat(shape,img):
     start=time.clock()
@@ -167,23 +143,6 @@ def getallfeat(shape,img):
     feat_downmouth=getfeat_github(net_downmouth,imgs[6])
     feat=np.concatenate((feat_wholeface,feat_ctf,feat_le,feat_re,feat_eye,feat_mouth,feat_downmouth),axis=1)
     return feat
-
-
-def getallfeatNew(shape,img,net_wholeface,net_ctf,net_le,net_re,net_eye,net_mouth,net_downmouth):
-    start=time.clock()
-    imgs=normSingle(shape,img)
-    end=time.clock()
-    print ("normSingle time is {}".format(end-start))
-    feat_wholeface=getfeat_github(net_wholeface,imgs[0])
-    feat_ctf=getfeat_github(net_ctf,imgs[1])
-    feat_le=getfeat_github(net_le,imgs[2])
-    feat_re=getfeat_github(net_re,imgs[3])
-    feat_eye=getfeat_github(net_eye,imgs[4])
-    feat_mouth=getfeat_github(net_mouth,imgs[5])
-    feat_downmouth=getfeat_github(net_downmouth,imgs[6])
-    feat=np.concatenate((feat_wholeface,feat_ctf,feat_le,feat_re,feat_eye,feat_mouth,feat_downmouth),axis=1)
-    return feat
-
 
 #fileRes = r'D:/face_recognition/Simple_Src/norm.txt'
 
@@ -414,9 +373,9 @@ saveMeanPath = '../Jb/mean.mat'
 saveCompoTPath = '../Jb/compoT.mat'
 #savemat(saveMeanPath,{'mean':mean})
 #savemat(saveCompoTPath,{'compoT':compoT})
-
 mean = loadmat(saveMeanPath)['mean']
 compoT = loadmat(saveCompoTPath)['compoT']
+
 
 #f = open('../Models/db_20170425_lab_qf.pickle','rb')
 f = open('../Models/20180309_database_hou.pickle','rb')
@@ -430,20 +389,6 @@ filename = '20170528.avi'
 #capture = cv2.VideoCapture('../Testdata/20170528.avi')
 #capture = cv2.VideoCapture(0)
 
-'''
-def faceRec(net_wholeface,net_ctf,net_le,net_re,net_eye,net_mouth,net_downmouth, img, gray, d, DB = db_qf):
-    begin = time.clock()
-    shape = predictor(gray, d)
-    feat_pca = np.dot(getallfeatNew(shape,img,net_wholeface,net_ctf,net_le,net_re,net_eye,net_mouth,net_downmouth)-mean,compoT)
-    end1 = time.clock()
-    print ("shape to featpca time is {}".format(end1-begin))
-    minkey,minscore=getscore(A,G,feat_pca,DB)
-    print ("minscore is {}, minkey is {}".format(str(int(minscore)),minkey))
-    end = time.clock()
-    print ("Face calculation time is {}".format(end-begin))
-    return minkey,minscore
-
-'''
 def faceRec(img, gray, d, DB = db_qf):
     begin = time.clock()
     shape = predictor(gray, d)
@@ -455,7 +400,6 @@ def faceRec(img, gray, d, DB = db_qf):
     end = time.clock()
     print ("Face calculation time is {}".format(end-begin))
     return minkey,minscore
-
 
 class FaceDetector(object):
     '''
