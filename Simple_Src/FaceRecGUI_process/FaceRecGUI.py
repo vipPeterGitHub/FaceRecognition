@@ -1,5 +1,5 @@
 #coding=utf-8
-from import_by_FaceRecGUI import *
+from imported_by_FaceRecGUI import *
 caffe.set_mode_gpu()
 
 
@@ -19,8 +19,6 @@ capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
 #capture.set(cv2.CAP_PROP_FRAME_WIDTH,1920)
 #capture.set(cv2.CAP_PROP_FRAME_HEIGHT,1080)
 '''
-
-
 
 def convImg(img,w=100,h=100):
     resize_im=cv2.resize(img,(w,h))
@@ -79,7 +77,7 @@ class MainWindow(QWidget):
         self.status = 0
         self.DBstatus = 0
 
-        self.playButton = QPushButton("Pause")
+        self.playButton = QPushButton("Play")
         self.playButton.setStyleSheet('font-size:20px; border-radius:10px;border:3px groove gray')
         self.cancelButton = QPushButton("UpdateDB")
         self.cancelButton.setStyleSheet('font-size:20px; border-radius:10px;border:3px groove gray')
@@ -220,12 +218,15 @@ class MainWindow(QWidget):
         
         self.arr = [["Stranger",0,0],["Stranger",0,0],["Stranger",0,0],["Stranger",0,0],["Stranger",0,0]]
 
+        '''
         self.playtimer.start()
         self.facetimer.start()
         self.texttimer.start()
+        '''
 
     #three QThreads of Three blocks of GUI 
-    def playVideo(self,byte_im):
+    def playVideo(self,face):
+        byte_im = convImg(face,1000,700)
         self.image.loadFromData(QByteArray(byte_im))
         self.imageLabel.setPixmap(QPixmap.fromImage(self.image))
     def playFace(self,byte_im):
@@ -320,6 +321,7 @@ class MainWindow(QWidget):
         print "Updating database completed!"
     
     #three buttons
+    '''
     def VideoPlayPause(self):
         self.status, playstr = ((1, 'Play'), (0, 'Pause'))[self.status]
         self.playButton.setText(playstr)
@@ -331,6 +333,19 @@ class MainWindow(QWidget):
             self.playtimer.start()
             self.facetimer.start()
             self.texttimer.start()
+    '''
+    def VideoPlayPause(self):
+        self.status, playstr = ((1, 'Pause'), (0, 'Play'))[self.status]
+        self.playButton.setText(playstr)
+        if self.status is 1:
+            self.playtimer.start()
+            self.facetimer.start()
+            self.texttimer.start()
+
+        else:
+            self.playtimer.stop()
+            self.facetimer.stop()
+            self.texttimer.stop()
 
     def DatabaseUpdataStop(self):
         self.DBstatus, cancelstr = ((1, 'updating, please wait ...'), (0, 'UpdateDB'))[self.DBstatus]
@@ -438,15 +453,18 @@ class Timer(QThread):
         self.mutex = QMutex()
         self.qCapture = qCapture
 
+
     def run(self):
         with QMutexLocker(self.mutex):
             self.stoped = False     
         while True:
             time.sleep(0.04)
+            #time.sleep(0.2)
             if self.stoped:
                 return
             if not self.qCapture.empty():
-                self.emit(SIGNAL(self.signal),self.qCapture.get(True,3))
+                face = self.qCapture.get(True,3)
+                self.emit(SIGNAL(self.signal),face)
 
     def stop(self):
         with QMutexLocker(self.mutex):
@@ -538,21 +556,24 @@ class CaptureProcess(multiprocessing.Process):
         self.qCapture = qCapture
         self.qFace = qFace
     def run(self):
-        #capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
-        #capture = cv2.VideoCapture('../Testdata/20170528.avi')
-        capture = cv2.VideoCapture(0)
+        #capture = cv2.VideoCapture('../Testdata/2018_04_14_13_48_32.avi')
+        capture = cv2.VideoCapture('../Testdata/e4.avi')
+        #capture = cv2.VideoCapture(0)
+        #capture.set(cv2.CAP_PROP_FRAME_WIDTH,640)
+        #capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
+        #out = cv2.VideoWriter(time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) +'.avi',cv2.VideoWriter_fourcc(*"DIVX"),20,(640,480))
         while True:
             #begin = time.clock()
             ret, face = capture.read()
             if ret == True:
-                #out.write(face)
                 face = cv2.flip(face, 1)
-                byte_im = convImg(face,1000,700)
+                #out.write(face)
+                #byte_im = convImg(face,1000,700)
 
                 #it not necessary to judge whether the queue is full,
                 #because when the FIFO-queue is full, 
                 #it will remove the head item and put the new itme at the tail
-                self.qCapture.put(byte_im)
+                self.qCapture.put(face)
                 self.qFace.put(face)
                 
                 #end = time.clock()
@@ -631,6 +652,9 @@ class RecProcess(multiprocessing.Process):
 
         self.loadNetEndFlag.value = not self.loadNetEndFlag.value
 
+        fileRes = r'D:/face_recognition/Simple_Src/printName1.txt'
+        cnt = 1
+
         while True:
             if not self.qList.empty():
                 img, gray, dets = self.qList.get(True,3)
@@ -649,6 +673,10 @@ class RecProcess(multiprocessing.Process):
                     imgFace = img[y1:y2,x1:x2,:]
                     minkey, minscore = faceRec(net_wholeface,net_ctf,net_le,net_re,net_eye,net_mouth,net_downmouth,img,gray,d)
                     aPost = [minkey,0,convImg(imgFace,100,100)]
+
+                    with open(fileRes,'a+') as fr:
+                        fr.write("No. {} name is {}".format(cnt,minkey)+'\r')
+                    cnt += 1
                     if not self.qPost.full():
                         self.qPost.put(aPost)
 
@@ -668,13 +696,23 @@ class ShowWindow(multiprocessing.Process):
         sys.exit(app.exec_())
 
 qFace = multiprocessing.Queue(3)
-qList = multiprocessing.Queue(1)
+qList = multiprocessing.Queue(5)
 qPost = multiprocessing.Queue(5)
 qCapture = multiprocessing.Queue(10)
 qSmallFace = multiprocessing.Queue(12)
 
 terminateAll = multiprocessing.Value("i", 0)
 loadNetEndFlag = multiprocessing.Value("i", 0)
+
+'''
+fourcc = cv2.VideoWriter_fourcc(*"DIVX")#(*"XVID")
+saveVideoPath = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) +'.avi'
+saveVideoPath2 = 'CaptureRecording1.avi'
+out = cv2.VideoWriter(saveVideoPath,fourcc,10,(640,480))#(1920,1080)) # 10 is speed. 640,480
+capture = cv2.VideoCapture(0)
+capture.set(cv2.CAP_PROP_FRAME_WIDTH,640)
+capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
+'''
 
 if __name__ == '__main__':
     showwindow = ShowWindow(qFace,qList,qPost,qCapture,qSmallFace,terminateAll)

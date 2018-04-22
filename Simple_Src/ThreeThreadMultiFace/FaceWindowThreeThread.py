@@ -1,5 +1,5 @@
 #coding=utf-8
-from import_by_FaceWindowThreeThread import *
+from imported_by_FaceWindowThreeThread import *
 caffe.set_mode_gpu()
 
 

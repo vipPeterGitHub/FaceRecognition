@@ -1,5 +1,5 @@
 #coding=utf-8
-from import_by_IdcardWindowThread import *
+from imported_by_IdcardWindowThread import *
 caffe.set_mode_gpu()
 
 #capture = cv2.VideoCapture('../Testdata/20170528.avi')
