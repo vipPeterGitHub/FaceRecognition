@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sys
 #sys.path.append('/usr/local/lib/python2.7/site-packages')
 import os
@@ -9,6 +10,8 @@ import argparse
 import cv2
 import numpy as np
 import cPickle as pickle
+import xlwt
+import shutil
 
 
 def get_parser():
@@ -22,8 +25,8 @@ def get_parser():
   parser.add_argument('--threshold', default=1.09, type=float, help='ver dist threshold')
 
   parser.add_argument('--mtcnn', default=False, type=bool, help='whether use mtcnn, if not use dlib')
-  parser.add_argument('--data_path', default='../Database1551', type=str, help='the path of image base')
-  parser.add_argument('--db_save_path', default='database/20180421_db1482_69_1551_hou.pickle', type=str, help='the save path of data base -- that is the feature of all images')
+  parser.add_argument('--data_path', default='../starsPic620', type=str, help='the path of image base')
+  parser.add_argument('--db_save_path', default='database/20180426_db600_20stars_hou.pickle', type=str, help='the save path of data base -- that is the feature of all images')
   args = parser.parse_args()
   return args
 
@@ -100,8 +103,8 @@ class FaceIdendify():
             minscore=score
             anskey=key
     if(minscore > self.args.threshold):
-        #anskey='Stranger/'+anskey
-        anskey='Stranger'
+        anskey='Stranger_'+anskey
+        #anskey='Stranger'
     fileRes = r'D:/face_recognition/MXNet/videoout/20170528.txt'
     with open(fileRes,'a+') as fr:
       fr.write('No. '+ str(self.num) +' anskey = '+str(anskey)+'  minscore = '+str(minscore)+'\r')
@@ -174,16 +177,14 @@ def mxnetCompare(img1,img2,face_identify):
         imgFace = det2face(img1, dets1[0])
   return score, imgFace
 
-
-if __name__ == '__main__':
+def videoFile2videoFile():
   args = get_parser()
   face_identify = FaceIdendify(args)
-
   #testvideo_path = '/home/peterhou/FaceRecognition/Testdata1/'
-  testvideo_path = 'D:/face_recognition/MXNet/testvideo/'
+  testvideo_path = 'D:/face_recognition/LinClassFaces_allvideo/'
   files= os.listdir(testvideo_path)
   #anspath='/home/peterhou/vic/data/videos/myout/'
-  anspath ='D:/face_recognition/MXNet/videoout/'
+  anspath ='D:/face_recognition/LinClassFaces_allvideo_result/'
   fourcc = cv2.VideoWriter_fourcc(*"DIVX")
   #fileRes = r'20170528.txt'
   #fileRes = r'D:/face_recognition/MXNet/videoout/20170528.txt'
@@ -195,14 +196,15 @@ if __name__ == '__main__':
       capture=cv2.VideoCapture(testvideo_path+filename)
     except:
       continue
-    out = cv2.VideoWriter(anspath+filename, fourcc, 4.0, (1024,768))
-    fileRes = r'20170528.txt'
-    with open(fileRes,'a+') as fr:
-      print ("writing !!!!!!!!!!!!!!!!!!")
-      fr.write(filename +'\r')
-    face_identify.num = 1 
+    out = cv2.VideoWriter(anspath+filename, fourcc, 10.0, (1024,768))
+    #fileRes = r'20170528.txt'
+    #with open(fileRes,'a+') as fr:
+    #  print ("writing !!!!!!!!!!!!!!!!!!")
+    #  fr.write(filename +'\r')
+    #face_identify.num = 1 
     while capture.read():
-      ret,img=capture.read()
+      for i in range(20):
+        ret,img=capture.read()
       if isinstance(img, types.NoneType):
         print ('Not a image. This is the end of the vedio.')
         break #This is the end of the vedio.
@@ -219,9 +221,9 @@ if __name__ == '__main__':
           continue
         for i, feat in enumerate(feats):
           minkey,minscore = face_identify.getscore(feat)
-          fileRes = r'20170528.txt'
-          with open(fileRes,'a+') as fr:
-            fr.write('No. '+ str(face_identify.num-1) +' anskey = '+str(minkey)+'  minscore = '+str(minscore)+'\r')
+          #fileRes = r'20170528.txt'
+          #with open(fileRes,'a+') as fr:
+          #  fr.write('No. '+ str(face_identify.num-1) +' anskey = '+str(minkey)+'  minscore = '+str(minscore)+'\r')
           d = dets[i]
           drawrec(minkey,minscore,img,d,filename.split('.')[0])
         img=cv2.resize(img,(1024,768))
@@ -231,3 +233,99 @@ if __name__ == '__main__':
     capture.release()
     out.release()
   cv2.destroyAllWindows()
+
+
+
+def strangerFAR():  # FAR: False Acceptance Rate; FRR: False Rejection Rate
+  # e.g.: 
+  # 2000 different faces
+  # 500(in a file) as database
+  # 1500(in a file) as input
+  # error occurs when the result is NOT "Stranger"
+
+  args = get_parser()
+  face_identify = FaceIdendify(args)
+  inputPath = "D:/face_recognition/Database1600/1000_input/"
+  errorPicPath = "D:/face_recognition/Database1600/errorPair/"
+  fileRes = r'D:/face_recognition/MXNet/1000_input.txt'
+  excel = xlwt.Workbook(encoding='utf-8', style_compression=0)
+  sheet = excel.add_sheet('sheet1', cell_overwrite_ok=True)
+  cnt = 1
+  faces = os.listdir(inputPath)
+  for face in faces:
+    facePath = inputPath+face
+    img = cv2.imread(facePath)
+    feats, dets, points_all = face_identify.get_features(img)
+    for i, feat in enumerate(feats):
+          minkey,minscore = face_identify.getscore(feat)
+          break # one face default
+    with open(fileRes,'a+') as fr:
+      fr.write('No. '+ str(cnt) +' anskey = '+str(minkey)+'  minscore = '+str(minscore)+'\r')
+
+    #print ('No. '+ str(cnt) +' anskey = '+str(minkey)+'  minscore = '+str(minscore))
+    sheet.write(cnt-1, 0, 'cnt')
+    sheet.write(cnt-1, 1, cnt)
+    sheet.write(cnt-1, 2, 'minkey')
+    sheet.write(cnt-1, 3, minkey)
+    sheet.write(cnt-1, 4, 'score')
+    sheet.write(cnt-1, 5, minscore.item())
+    if minscore<1.09:
+      shutil.copyfile(facePath, errorPicPath+minkey+face)
+      shutil.copyfile('D:/face_recognition/DatabaseFace/'+minkey+'.jpg', errorPicPath+minkey+'.jpg')
+    print cnt
+    cnt+=1
+  excel.save(r'D:/face_recognition/MXNet/score1000.xls')
+
+def familiarFRR():  # FAR: False Acceptance Rate; FRR: False Rejection Rate
+  # e.g.: 
+  # 500 faces (in a file) as database
+  # 40 of them have 2000 different faces as input
+  # error occurs when the result is NOT the right answer
+
+  args = get_parser()
+  face_identify = FaceIdendify(args)
+  inputPath = "D:/face_recognition/starsVideoFaces/"
+  #errorPicPath = "D:/face_recognition/Database1600/errorPair/"
+  labelPath = "D:/face_recognition/starsVideoFaces_label/"
+  fileRes = r'D:/face_recognition/MXNet/stars_video_faces_mxnet.txt'
+  excel = xlwt.Workbook(encoding='utf-8', style_compression=0)
+  sheet = excel.add_sheet('sheet1', cell_overwrite_ok=True)
+  cnt = 1
+  faces = os.listdir(inputPath)
+  for face in faces:
+    facePath = inputPath+face
+    img = cv2.imread(facePath)
+    feats, dets, points_all = face_identify.get_features(img)
+    if(not feats):
+      minkey = "Stranger_no_face"
+      minscore = 111*np.ones(1)
+    else:
+      for i, feat in enumerate(feats):
+            minkey,minscore = face_identify.getscore(feat)
+            break # one face default
+    with open(fileRes,'a+') as fr:
+      fr.write('No. '+ str(cnt) +' anskey = '+str(minkey)+'  minscore = '+str(minscore)+'\r')
+
+    #print ('No. '+ str(cnt) +' anskey = '+str(minkey)+'  minscore = '+str(minscore))
+    sheet.write(cnt-1, 0, 'cnt')
+    sheet.write(cnt-1, 1, cnt)
+    sheet.write(cnt-1, 2, 'minkey')
+    sheet.write(cnt-1, 3, minkey)
+    sheet.write(cnt-1, 4, 'score')
+    sheet.write(cnt-1, 5, minscore.item())
+    shutil.copyfile(facePath, labelPath+minkey+face)
+    print cnt
+    cnt+=1
+  excel.save(r'D:/face_recognition/MXNet/stars_video_faces_mxnet.xls')
+
+
+if __name__ == '__main__':
+  videoFile2videoFile()
+  print ('done!')
+
+
+
+
+
+
+

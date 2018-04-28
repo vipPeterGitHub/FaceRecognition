@@ -557,8 +557,8 @@ class CaptureProcess(multiprocessing.Process):
         self.qFace = qFace
     def run(self):
         #capture = cv2.VideoCapture('../Testdata/2018_04_14_13_48_32.avi')
-        capture = cv2.VideoCapture('../Testdata/e4.avi')
-        #capture = cv2.VideoCapture(0)
+        #capture = cv2.VideoCapture('../Testdata/e4.avi')
+        capture = cv2.VideoCapture(0)
         #capture.set(cv2.CAP_PROP_FRAME_WIDTH,640)
         #capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
         #out = cv2.VideoWriter(time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) +'.avi',cv2.VideoWriter_fourcc(*"DIVX"),20,(640,480))
@@ -619,6 +619,33 @@ class RecProcess(multiprocessing.Process):
         self.qPost = qPost
         self.loadNetEndFlag = loadNetEndFlag
     def run(self):
+
+        #pickleModlePath = '../Models/20180424_database600_caffe_hou.pickle'
+        pickleModlePath = '../Models/20180426_db600_20stars_caffe_hou.pickle'
+        #databasaPath = "../Database1600/600_model" 
+        databasaPath = "../starsPic620" 
+
+        if not os.path.exists(pickleModlePath):
+            print "Databaes creating ......  Please wait......"
+            databaseUpdate(databasaPath,pickleModlePath)
+            print "Database creating completed!"
+        else:
+            print "Database pickle model has exists, loading ......"
+
+
+        #import database
+        #f = open('../Models/db_20170425_lab_qf.pickle','rb')
+        #f = open('../Models/20180309_database_hou.pickle','rb')
+        f = open(pickleModlePath,'rb')
+        #f = open('../Models/20180309_database_hou_simple.pickle','rb')
+        #f = open('../Models/610324199510253457_DB.pickle','rb')
+        db_qf=pickle.load(f)
+        f.close()
+        print "Loading database pickle model completed!"
+
+
+
+
         caffe.set_mode_gpu()
         #caffe.set_device(0)
 
@@ -645,6 +672,10 @@ class RecProcess(multiprocessing.Process):
         net_downmouth = caffe.Net('../Models/face_deploy.prototxt',
                             '../Models/downmouth_iter_28000.caffemodel',
                             caffe.TEST)
+
+
+
+
         end = time.clock()
         print("loading net time is {}".format(end - begin))
 
@@ -671,7 +702,7 @@ class RecProcess(multiprocessing.Process):
                     if y1<0:
                         y1 = 10
                     imgFace = img[y1:y2,x1:x2,:]
-                    minkey, minscore = faceRec(net_wholeface,net_ctf,net_le,net_re,net_eye,net_mouth,net_downmouth,img,gray,d)
+                    minkey, minscore = faceRec(net_wholeface,net_ctf,net_le,net_re,net_eye,net_mouth,net_downmouth,img,gray,d,db_qf)
                     aPost = [minkey,0,convImg(imgFace,100,100)]
 
                     with open(fileRes,'a+') as fr:

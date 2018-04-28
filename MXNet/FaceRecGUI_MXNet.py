@@ -308,6 +308,8 @@ class MainWindow(QWidget):
                 self.faces[i] = self.faces[i+1]
             self.faces[11] = byte_im
     def multiFaceNew(self, aGet):
+        if aGet[0][0:8] == "Stranger":
+            aGet[0] = "Stranger"
         if aGet[0] != "Stranger":
         #if aGet[3] < 1.09:
             self.checkExist(aGet, self.arr)
@@ -569,14 +571,18 @@ class CaptureProcess(multiprocessing.Process):
         self.qFace = qFace
     def run(self):
         #capture = cv2.VideoCapture('../Testdata/2018_04_14_13_48_32.avi')
-        capture = cv2.VideoCapture('../Testdata/20170528.avi')
+        #capture = cv2.VideoCapture('../Testdata/20170528.avi')
+        capture = cv2.VideoCapture('../starsVideo/v1.mov')
         #capture = cv2.VideoCapture(0)
         #capture.set(cv2.CAP_PROP_FRAME_WIDTH,640)
         #capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
         #out = cv2.VideoWriter(time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) +'.avi',cv2.VideoWriter_fourcc(*"DIVX"),20,(640,480))
         while True:
             #begin = time.clock()
-            ret, face = capture.read()
+
+            for i in range(10):
+                ret, face = capture.read()
+
             if ret == True:
                 face = cv2.flip(face, 1)
                 #out.write(face)
