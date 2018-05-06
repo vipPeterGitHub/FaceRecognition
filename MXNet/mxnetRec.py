@@ -25,8 +25,8 @@ def get_parser():
   parser.add_argument('--threshold', default=1.09, type=float, help='ver dist threshold')
 
   parser.add_argument('--mtcnn', default=False, type=bool, help='whether use mtcnn, if not use dlib')
-  parser.add_argument('--data_path', default='../starsPic620', type=str, help='the path of image base')
-  parser.add_argument('--db_save_path', default='database/20180426_db600_20stars_hou.pickle', type=str, help='the save path of data base -- that is the feature of all images')
+  parser.add_argument('--data_path', default='../testFile656/Database656', type=str, help='the path of image base')
+  parser.add_argument('--db_save_path', default='database/20180426_db600_20stars_beijing&GOT_hou.pickle', type=str, help='the save path of data base -- that is the feature of all images')
   args = parser.parse_args()
   return args
 
@@ -181,29 +181,29 @@ def videoFile2videoFile():
   args = get_parser()
   face_identify = FaceIdendify(args)
   #testvideo_path = '/home/peterhou/FaceRecognition/Testdata1/'
-  testvideo_path = 'D:/face_recognition/LinClassFaces_allvideo/'
+  testvideo_path = 'D:/face_recognition/tmpVideoIn/'
   files= os.listdir(testvideo_path)
   #anspath='/home/peterhou/vic/data/videos/myout/'
-  anspath ='D:/face_recognition/LinClassFaces_allvideo_result/'
+  anspath ='D:/face_recognition/tmpVideoOut/'
   fourcc = cv2.VideoWriter_fourcc(*"DIVX")
   #fileRes = r'20170528.txt'
   #fileRes = r'D:/face_recognition/MXNet/videoout/20170528.txt'
 
   for filename in files:
-    if filename.split('.')[-1] not in ['avi', 'mp4']:
+    if filename.split('.')[-1] not in ['avi', 'mp4', 'mov']:
       continue
     try:
       capture=cv2.VideoCapture(testvideo_path+filename)
     except:
       continue
-    out = cv2.VideoWriter(anspath+filename, fourcc, 10.0, (1024,768))
+    out = cv2.VideoWriter(anspath+filename, fourcc, 20.0, (1024,768))
     #fileRes = r'20170528.txt'
     #with open(fileRes,'a+') as fr:
     #  print ("writing !!!!!!!!!!!!!!!!!!")
     #  fr.write(filename +'\r')
     #face_identify.num = 1 
     while capture.read():
-      for i in range(20):
+      for i in range(10):
         ret,img=capture.read()
       if isinstance(img, types.NoneType):
         print ('Not a image. This is the end of the vedio.')
@@ -284,10 +284,10 @@ def familiarFRR():  # FAR: False Acceptance Rate; FRR: False Rejection Rate
 
   args = get_parser()
   face_identify = FaceIdendify(args)
-  inputPath = "D:/face_recognition/starsVideoFaces/"
+  inputPath = "D:/face_recognition/testFile656/beijing_GOT_faces/"
   #errorPicPath = "D:/face_recognition/Database1600/errorPair/"
-  labelPath = "D:/face_recognition/starsVideoFaces_label/"
-  fileRes = r'D:/face_recognition/MXNet/stars_video_faces_mxnet.txt'
+  labelPath = "D:/face_recognition/testFile656/beijing_GOT_faces_label/"
+  fileRes = r'D:/face_recognition/testFile656/beijing_GOT_faces_mxnet.txt'
   excel = xlwt.Workbook(encoding='utf-8', style_compression=0)
   sheet = excel.add_sheet('sheet1', cell_overwrite_ok=True)
   cnt = 1
@@ -316,7 +316,7 @@ def familiarFRR():  # FAR: False Acceptance Rate; FRR: False Rejection Rate
     shutil.copyfile(facePath, labelPath+minkey+face)
     print cnt
     cnt+=1
-  excel.save(r'D:/face_recognition/MXNet/stars_video_faces_mxnet.xls')
+  excel.save(r'D:/face_recognition/testFile656/beijing_GOT_faces_mxnet.xls')
 
 
 if __name__ == '__main__':

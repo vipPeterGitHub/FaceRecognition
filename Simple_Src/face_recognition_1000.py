@@ -304,7 +304,7 @@ net_downmouth = caffe.Net('../Models/face_deploy.prototxt',
 
 
 # Import Lab database
-f = open('../Models/20180426_db600_20stars_caffe_hou.pickle','rb')
+f = open('../Models/20180426_db600_20stars_beijing&GOT_caffe_hou.pickle','rb')
 db_qf=pickle.load(f)
 f.close()
 
@@ -416,10 +416,10 @@ def caffe1000():
 
 
 def caffeClassFaces():
-    inputPath = "D:/face_recognition/starsVideoFaces/"
+    inputPath = "D:/face_recognition/testFile656/beijing_GOT_faces/"
     #errorPicPath = "D:/face_recognition/Database1600/errorPair/"
-    labelPath = "D:/face_recognition/starsVideoFaces_label_caffe/"
-    fileRes = r'D:/face_recognition/Simple_Src/stars_video_faces_caffe.txt'
+    labelPath = "D:/face_recognition/testFile656/beijing_GOT_faces_label_caffe/"
+    fileRes = r'D:/face_recognition/testFile656/beijing_GOT_faces_caffe.txt'
 
     excel = xlwt.Workbook(encoding='utf-8', style_compression=0)
     sheet = excel.add_sheet('sheet1', cell_overwrite_ok=True)
@@ -446,7 +446,7 @@ def caffeClassFaces():
         shutil.copyfile(facePath, labelPath+minkey+face)
         print cnt
         cnt+=1
-    excel.save(r'D:/face_recognition/Simple_Src/stars_video_faces_caffe.xls')
+    excel.save(r'D:/face_recognition/testFile656/beijing_GOT_faces_caffe.xls')
 
 def img2score(img): # only for one face
     gray=cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
@@ -478,9 +478,10 @@ def det2face(img, d):
     return img[y1:y2,x1:x2,:]
 def getVideoFace():
     print "Begin!!!"
-    videosPath = 'D:/face_recognition/starsVideo/'
-    facesPath = 'D:/face_recognition/starsVideoFaces/'
-    cnt = 1
+    videosPath = 'D:/face_recognition/testFile656/beijing_GOT_videos/'
+    facesPath = 'D:/face_recognition/testFile656/beijing_GOT_faces/'
+    #cnt = 1
+    cnt = 1416
     cntV = 1
     videos = os.listdir(videosPath)
     print videos
