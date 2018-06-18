@@ -1,10 +1,10 @@
 #coding=utf-8
-from face_recognition_new import *
+from imported_by_FaceWindowThreeThread import *
 caffe.set_mode_gpu()
 
 
-capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
-#capture = cv2.VideoCapture('../Testdata/20170528.avi')
+#capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
+capture = cv2.VideoCapture('../Testdata/20170528.avi')
 
 #capture = cv2.VideoCapture(0)
 
@@ -12,12 +12,10 @@ capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
 fourcc = cv2.VideoWriter_fourcc(*"DIVX")#(*"XVID")
 saveVideoPath = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) +'.avi'
 saveVideoPath2 = 'CaptureRecording1.avi'
-out = cv2.VideoWriter(saveVideoPath,fourcc,20,(640,480))#(1920,1080)) # 10 is speed. 640,480
+out = cv2.VideoWriter(saveVideoPath,fourcc,10,(640,480))#(1920,1080)) # 10 is speed. 640,480
 capture = cv2.VideoCapture(0)
 capture.set(cv2.CAP_PROP_FRAME_WIDTH,640)
 capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
-#capture.set(cv2.CAP_PROP_FRAME_WIDTH,1920)
-#capture.set(cv2.CAP_PROP_FRAME_HEIGHT,1080)
 '''
 
 
@@ -544,10 +542,12 @@ class Timer(QThread):
                 return
 
             #begin = time.clock()
-            ret, face = capture.read()
+            #ret, face = capture.read()
+            for i in range(15):
+                ret, face = capture.read()
             if ret == True:
+                #face = cv2.flip(face, 1)
                 #out.write(face)
-                face = cv2.flip(face, 1)
                 if not qFace.full():
                     qFace.put(face)
                 byte_im = convImg(face,1000,700)

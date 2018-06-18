@@ -556,9 +556,9 @@ class CaptureProcess(multiprocessing.Process):
         self.qCapture = qCapture
         self.qFace = qFace
     def run(self):
-        #capture = cv2.VideoCapture('../Testdata/2018_04_14_13_48_32.avi')
+        capture = cv2.VideoCapture('../Testdata/v3.mov')
         #capture = cv2.VideoCapture('../Testdata/e4.avi')
-        capture = cv2.VideoCapture(0)
+        #capture = cv2.VideoCapture(0)
         #capture.set(cv2.CAP_PROP_FRAME_WIDTH,640)
         #capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
         #out = cv2.VideoWriter(time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) +'.avi',cv2.VideoWriter_fourcc(*"DIVX"),20,(640,480))
