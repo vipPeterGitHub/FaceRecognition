@@ -1,7 +1,9 @@
 #coding=utf-8
 from imported_by_FaceRecGUI import *
-from mxnetRec import *
-caffe.set_mode_gpu()
+from mxnetRec_dlib import *
+from ctypes import *
+import pythoncom
+#caffe.set_mode_gpu()
 
 
 #capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
@@ -20,6 +22,29 @@ capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
 #capture.set(cv2.CAP_PROP_FRAME_WIDTH,1920)
 #capture.set(cv2.CAP_PROP_FRAME_HEIGHT,1080)
 '''
+
+def on_process_video_preview(pDevice, dSampleTime, pFrameBuffer, nFrameBufferLen, pUserData):
+    global SDKcnt
+    if(pFrameBuffer == None or nFrameBufferLen == 0):
+        return 0;
+    a = np.zeros(6220800, np.ubyte) # 1920 * 1080 * 3
+    if not a.flags['C_CONTIGUOUS']:
+        a = np.ascontiguous(a, dtype=a.dtype) 
+    a_ctypes_ptr = cast(a.ctypes.data, POINTER(c_ubyte)) 
+    QCAP.QCAP_COLORSPACE_YUY2_TO_BGR24(pFrameBuffer, 1920, 1080, 0, a_ctypes_ptr, 1920, 1080, 0,False,False)   
+    img = a.reshape((1080,1920,3))
+    # img = cv2.resize(img,(640,480))
+    if SDKcnt == 0 or SDKcnt == 1 or SDKcnt == 2 or SDKcnt == 3:
+        SDKcnt+=1
+    else:
+        SDKcnt = 0
+        if not qSDK.full():
+            qSDK.put(img)
+    #time.sleep(0.01)
+    # cv2.imshow('czm',img)
+    # cv2.waitKey(1)
+    return 0
+
 
 def convImg(img,w=100,h=100):
     resize_im=cv2.resize(img,(w,h))
@@ -74,7 +99,6 @@ class MainWindow(QWidget):
     def __init__(self, qFace, qList, qPost, qCapture, qSmallFace, terminateAll):
         super(MainWindow, self).__init__()
         self.setWindowTitle('Face Recognition')
-        self.setWindowIcon(QIcon('sjtu.png'))
         self.resize(1200, 850)
         self.status = 0
         self.DBstatus = 0
@@ -99,23 +123,23 @@ class MainWindow(QWidget):
         self.face11 = QLabel('')
         self.face12 = QLabel('')
         self.text1 = QLabel(" ")
-        self.setTextFont(self.text1, w = 250, h = 30, s = 15)
+        self.setTextFont(self.text1, w = 250, h = 30, s = 8)
         self.face21 = QLabel('')
         self.face22 = QLabel('')
         self.text2 = QLabel(" ")
-        self.setTextFont(self.text2, w = 250, h = 30, s = 15)
+        self.setTextFont(self.text2, w = 250, h = 30, s = 8)
         self.face31 = QLabel('')
         self.face32 = QLabel('')
         self.text3 = QLabel(" ")
-        self.setTextFont(self.text3, w = 250, h = 30, s = 15)
+        self.setTextFont(self.text3, w = 250, h = 30, s = 8)
         self.face41 = QLabel('')
         self.face42 = QLabel('')
         self.text4 = QLabel(" ")
-        self.setTextFont(self.text4, w = 250, h = 30, s = 15)
+        self.setTextFont(self.text4, w = 250, h = 30, s = 8)
         self.face51 = QLabel('')
         self.face52 = QLabel('')
         self.text5 = QLabel(" ")
-        self.setTextFont(self.text5, w = 250, h = 30, s = 15)
+        self.setTextFont(self.text5, w = 250, h = 30, s = 8)
 
         self.f1 = QHBoxLayout()
         self.f1.addWidget(self.face11)
@@ -230,6 +254,8 @@ class MainWindow(QWidget):
         byte_im = convImg(face,1000,700)
         self.image.loadFromData(QByteArray(byte_im))
         self.imageLabel.setPixmap(QPixmap.fromImage(self.image))
+        #print "GUI display!!!!!!!!!!!!!!!!!!!"
+
     def playFace(self,byte_im):
         self.image.loadFromData(QByteArray(byte_im))
         if self.b_cnt == 1:
@@ -438,13 +464,13 @@ class MainWindow(QWidget):
             self.face52.setText(" ")
             self.text5.setText(" ")
     def setTextFont(self,l, w = 250, h = 30, s = 8):
-    	l.setFixedWidth(w)  
+        l.setFixedWidth(w)  
         l.setFixedHeight(h)  
         l.setAlignment(Qt.AlignCenter)
         l.setFont(QFont("Arial",s,QFont.Normal))
         #l.setFont(QFont("Roman times",s,QFont.Bold))
     def setDefaultPic(self,l,w = 100,h = 100,im = 'nopic.jpg'):
-    	orig_im = cv2.imread(im)
+        orig_im = cv2.imread(im)
         byte_im = convImg(orig_im,w,h)
         self.image.loadFromData(QByteArray(byte_im))
         l.setPixmap(QPixmap.fromImage(self.image))
@@ -468,8 +494,11 @@ class Timer(QThread):
             if self.stoped:
                 return
             if not self.qCapture.empty():
-                face = self.qCapture.get(True,3)
+                face = self.qCapture.get(True)
+                print "qCapture not empty!!!!!!!!!!!!!!!!!!!"
                 self.emit(SIGNAL(self.signal),face)
+            else:
+                print "qCapture empty!!!!!!!!!!!!!!!!!!!"
 
     def stop(self):
         with QMutexLocker(self.mutex):
@@ -490,7 +519,7 @@ class FaceTimer(QThread):
         with QMutexLocker(self.mutex):
             self.stoped = False
         while True:
-            time.sleep(0.1)
+            time.sleep(0.04)
             if self.stoped:
                 return
             if not self.qSmallFace.empty():
@@ -566,46 +595,31 @@ class DatabaseTimer(QThread):
             return self.stoped
 
 class CaptureProcess(multiprocessing.Process):
-    def __init__(self,qCapture,qFace):
+    def __init__(self,qSDK,qCapture,qFace):
         multiprocessing.Process.__init__(self)
+        self.qSDK = qSDK
         self.qCapture = qCapture
         self.qFace = qFace
     def run(self):
-        #capture = cv2.VideoCapture('../Testdata/20170528.avi')
-        capture = cv2.VideoCapture('../Testdata/v3.mov')
-        #capture = cv2.VideoCapture('../starsVideo/v1.mov')
-        #capture = cv2.VideoCapture(0)
-        #capture.set(cv2.CAP_PROP_FRAME_WIDTH,640)
-        #capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
-        #out = cv2.VideoWriter(time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) +'.avi',cv2.VideoWriter_fourcc(*"DIVX"),20,(640,480))
-        # cnt = 1
         while True:
-            #begin = time.clock()
-            time.sleep(0.005)
-            #time.sleep(0.05)
-            #for i in range(1):
-            ret, face = capture.read()
-
-            if ret == True:
-                #face = cv2.flip(face, 1)
-                #out.write(face)
-                #byte_im = convImg(face,1000,700)
-                #print ("capture size is {}".format(face.shape))
-                # cv2.imwrite('shots/'+str(cnt)+'.jpg',face)
-                # cnt += 1
-
-                #it not necessary to judge whether the queue is full,
-                #because when the FIFO-queue is full, 
-                #it will remove the head item and put the new itme at the tail
-
+            time.sleep(0.02)
+            if not self.qSDK.empty():
+                #print "get SDK!!!!!!!!!!!!!!!!!!!"
+                face = self.qSDK.get(True)
                 if not self.qCapture.full():
                     self.qCapture.put(face)
+                # else:
+                #     print "capture full!!!"
 
+                # else:
+                #     tmp = self.qCapture.get(True)
+                #     self.qCapture.put(face)
                 if not self.qFace.full():
                     self.qFace.put(face)
-                # self.qCapture.put(face)
-                # self.qFace.put(face)
-                
+                # else:
+                #     tmp = self.qFace.get(True)
+                #     self.qFace.put(face)
+
                 #end = time.clock()
                 #print("capture time is {}".format(end - begin))
 
@@ -719,14 +733,17 @@ class ShowWindow(multiprocessing.Process):
         mainwindow.show()
         sys.exit(app.exec_())
 
-qFace = multiprocessing.Queue(2)
-qList = multiprocessing.Queue(1)
+qFace = multiprocessing.Queue(3)
+qList = multiprocessing.Queue(5)
 qPost = multiprocessing.Queue(8)
 qCapture = multiprocessing.Queue(10)
-qSmallFace = multiprocessing.Queue(10)
+qSmallFace = multiprocessing.Queue(12)
+
+qSDK = multiprocessing.Queue(10)
 
 terminateAll = multiprocessing.Value("i", 0)
 loadNetEndFlag = multiprocessing.Value("i", 0)
+SDKcnt = multiprocessing.Value("i", 0)
 
 '''
 fourcc = cv2.VideoWriter_fourcc(*"DIVX")#(*"XVID")
@@ -738,13 +755,46 @@ capture.set(cv2.CAP_PROP_FRAME_WIDTH,640)
 capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
 '''
 
+
+
+QCAP = CDLL('QCAP.X64.DLL')
+p_on_process_video_preview = CFUNCTYPE(c_int, c_void_p, c_double, POINTER(c_ubyte), c_ulong, c_void_p)
+pythoncom.CoInitialize()
+a = c_long(999);
+b = c_long(999);
+c = c_long(999);
+d = c_long(999);
+e = c_long(999);
+f = c_long(999);
+g = c_long(999);
+h = c_long(999);
+i = c_long(999);
+
+on_process_video_preview_handle = p_on_process_video_preview(on_process_video_preview)
+
+device = c_long(0)
+
+a = QCAP.QCAP_CREATE("CY3014 USB", 0 , 0 , byref(device) , 1 , 0)
+
+c = QCAP.QCAP_SET_VIDEO_INPUT(device,7)
+
+d = QCAP.QCAP_SET_VIDEO_DEINTERLACE(device,0)
+
+f = QCAP.QCAP_REGISTER_VIDEO_PREVIEW_CALLBACK(device,on_process_video_preview_handle,0)
+
+# b = QCAP.QCAP_RUN(device)
+
+
+
+
 if __name__ == '__main__':
     showwindow = ShowWindow(qFace,qList,qPost,qCapture,qSmallFace,terminateAll)
     recprocess = RecProcess(qList,qPost,loadNetEndFlag)
-    captureprocess = CaptureProcess(qCapture,qFace)
+    captureprocess = CaptureProcess(qSDK,qCapture,qFace)
     smallface = SmallFace(qFace,qList,qSmallFace)
 
     recprocess.start()
+    b = QCAP.QCAP_RUN(device)
     while True:
         if loadNetEndFlag.value:
             captureprocess.start()
@@ -754,6 +804,14 @@ if __name__ == '__main__':
             break
     while True:
         if terminateAll.value:
+
+            # e = QCAP.QCAP_SNAPSHOT_JPG(device, "test.JPG", 80, 1, 0)
+            h= QCAP.QCAP_STOP(device)
+            i= QCAP.QCAP_DESTROY(device)
+            pythoncom.CoUninitialize()
+            print "SDK is terminated!"
+
+
             captureprocess.terminate()
             recprocess.terminate()
             smallface.terminate()

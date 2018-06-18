@@ -256,7 +256,7 @@ class Timer(QThread):
         with QMutexLocker(self.mutex):
             self.stoped = False     
         while True:
-            time.sleep(0.04)
+            #time.sleep(0.04)
             if self.stoped:
                 return
             if not self.qCapture.empty():
@@ -303,15 +303,15 @@ class CaptureProcess(multiprocessing.Process):
         self.qCapture = qCapture
         self.qFace = qFace
     def run(self):
-        #capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
-        capture = cv2.VideoCapture('../Testdata/2018_03_12_16_03_18.avi')
-        #capture = cv2.VideoCapture(0)
+        #capture = cv2.VideoCapture('../Testdata/20170528.avi')
+        #capture = cv2.VideoCapture('../Testdata/v3.mov')
+        capture = cv2.VideoCapture(0)
         #capture.set(cv2.CAP_PROP_FRAME_WIDTH,640)
         #capture.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
         #out = cv2.VideoWriter(time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime(time.time())) +'.avi',cv2.VideoWriter_fourcc(*"DIVX"),20,(640,480))
         while True:
             #begin = time.clock()
-            time.sleep(0.1)
+            time.sleep(0.04)
             ret, face = capture.read()
             if ret == True:
                 face = cv2.flip(face, 1)
@@ -409,7 +409,10 @@ class VerifyProcess(multiprocessing.Process):
                 for i in range(3):
                     if not self.qFace.empty():
                         imgCap = self.qFace.get(True,3)
+                        bb = time.clock()
                         s[i],f[i] = mxnetCompare(imgCap,imgID,face_identify)
+                        ee = time.clock()
+                        print ("one face time is {}".format(ee - bb))
                         print ("the {}-th score is {}".format(i+1,s[i]))
                         if s[i]<threshold:
                             flag_true+=1
@@ -426,8 +429,9 @@ class VerifyProcess(multiprocessing.Process):
                 if score > threshold:
                     print "Failed! You are stranger."
                     cnt = 0
-                    #self.qResult.put(["Failed. "+str(int(score)), byte_im, 0]) 
-                    self.qResult.put(["Failed. "+str(round(score,2)), byte_im, convImg(faceCap,220,300)]) 
+                    
+                    #self.qResult.put(["Failed. "+str(round(score,2)), byte_im, convImg(faceCap,220,300)])
+                    self.qResult.put(["Failed.", byte_im, convImg(faceCap,220,300)]) 
                     
                     end = time.clock()
                     print ("reading & calculating time is {}".format(end - begin))
@@ -437,7 +441,7 @@ class VerifyProcess(multiprocessing.Process):
                     print "Successful! "+ name + id_num
                     cnt = 0
                     self.qResult.put([name+' '+id_num+' '+str(round(score,2)), byte_im, convImg(faceCap,220,300)])
-                    #self.emit(SIGNAL(self.signal), 'Successful! '+name+' '+id_num+str(int(score)), byte_im, convImg(faceCap,220,300))
+                    self.qResult.put([name, byte_im, convImg(faceCap,220,300)])
                     end = time.clock()
                     print ("reading & calculating time is {}".format(end - begin))
                     #time.sleep(0.5)
