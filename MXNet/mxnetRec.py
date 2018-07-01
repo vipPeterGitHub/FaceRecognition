@@ -119,6 +119,16 @@ class FaceIdendify():
     f.close()
     print cnt, 'images have been done'
 
+  def add_student(self,im,sjtuCnt): 
+    feat,d,p = self.model.get_feature(im)
+    name = "SJTU"+str(sjtuCnt)
+    sjtuFeature[name]=feat
+    d = d[0]
+    [x1,x2,y1,y2] = [d.left(),d.right(),d.top(),d.bottom()]
+    imgFace = im[y1:y2,x1:x2,:]
+    cv2.imwrite('../DatabaseFace/'+name+'.jpg',imgFace)
+    return name, sjtuFeature
+
   def _get_score(self, f1, f2):
     #sim = np.dot(source_feature, target_feature.T)
     diff = np.subtract(f1, f2)
@@ -136,9 +146,27 @@ class FaceIdendify():
     if(minscore > self.args.threshold):
         anskey='Stranger_'+anskey
         #anskey='Stranger'
-    fileRes = r'D:/face_recognition/MXNet/LFW_FAR.txt'
-    with open(fileRes,'a+') as fr:
-      fr.write('No. '+ str(self.num) +' anskey = '+str(anskey)+'  minscore = '+str(minscore)+'\r')
+    #fileRes = r'D:/face_recognition/MXNet/LFW_FAR.txt'
+    #with open(fileRes,'a+') as fr:
+    #  fr.write('No. '+ str(self.num) +' anskey = '+str(anskey)+'  minscore = '+str(minscore)+'\r')
+    print ('No. '+ str(self.num) +' anskey = '+str(anskey)+'  minscore = '+str(minscore))
+    self.num += 1
+    return anskey,minscore
+
+  def getscore_new(self, feat, featureDict):
+    minscore= 1000.
+    anskey='nobody'
+    for key,value in featureDict.items():
+        score=self._get_score(feat, value)
+        if(score<minscore):
+            minscore=score
+            anskey=key
+    if(minscore > self.args.threshold):
+        anskey='Stranger_'+anskey
+        #anskey='Stranger'
+    #fileRes = r'D:/face_recognition/MXNet/LFW_FAR.txt'
+    #with open(fileRes,'a+') as fr:
+    #  fr.write('No. '+ str(self.num) +' anskey = '+str(anskey)+'  minscore = '+str(minscore)+'\r')
     print ('No. '+ str(self.num) +' anskey = '+str(anskey)+'  minscore = '+str(minscore))
     self.num += 1
     return anskey,minscore
@@ -184,6 +212,23 @@ def mxnetFaceRec(img, face_identify):
   else:
     for i, feat in enumerate(feats):
       minkey,minscore = face_identify.getscore(feat)
+      imgFace = det2face(img, dets[i])
+      resultList.append([minkey,minscore,imgFace])
+  return resultList
+
+
+def mxnetFaceRec_new(img, face_identify, featureDict):
+  resultList = []
+  feats, dets, points_all = face_identify.get_features(img)
+  if(not feats):
+    print "No face detected"
+    minkey = "Stranger"
+    minscore = 100
+    imgFace = img
+    resultList.append([minkey,minscore,imgFace])
+  else:
+    for i, feat in enumerate(feats):
+      minkey,minscore = face_identify.getscore_new(feat,featureDict)
       imgFace = det2face(img, dets[i])
       resultList.append([minkey,minscore,imgFace])
   return resultList
